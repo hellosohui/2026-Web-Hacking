@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ '다이어리 수정' if form_mode == 'edit' else '오늘 기록하기' }} | Meongstagram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="diary-body">
+    <main class="profile-layout-container diary-layout-container">
+        <aside class="profile-sidebar diary-sidebar">
+            <div class="sidebar-logo">
+                <a href="{{ url_for('index') }}">Meongstagram</a>
+            </div>
+            {% set sidebar_active = 'diary' %}
+            {% include "components/sidebar_nav.html" %}
+            <div class="sidebar-bottom diary-sidebar-bottom">
+                <a href="{{ url_for('diary') }}" class="btn-create-post-sidebar diary-create-btn">다이어리로 돌아가기</a>
+            </div>
+        </aside>
+
+        <section class="profile-content-area diary-content-area">
+            <header class="diary-topbar">
+                <div>
+                    <h1>{{ '다이어리 수정' if form_mode == 'edit' else '오늘 기록하기' }}</h1>
+                    <p>반려견의 하루를 사진과 함께 남겨보세요.</p>
+                </div>
+            </header>
+
+            {% with flashes = get_flashed_messages(with_categories=true) %}
+                {% if flashes %}
+                    <div class="diary-flash-stack">
+                        {% for category, message in flashes %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <section class="diary-form-card">
+                <form
+                    action="{{ url_for('diary_edit', entry_id=entry.id) if form_mode == 'edit' else url_for('diary_new') }}"
+                    method="POST"
+                    enctype="multipart/form-data"
+                    class="diary-form-grid"
+                >
+                    <div class="diary-form-field">
+                        <label for="dog_name">반려견 이름</label>
+                        <input type="text" id="dog_name" name="dog_name" value="{{ entry.get('dog_name', '') }}" placeholder="예: 하늘이">
+                    </div>
+
+                    <div class="diary-form-field">
+                        <label for="mood">오늘의 기분</label>
+                        <input type="text" id="mood" name="mood" value="{{ entry.get('mood', '') }}" placeholder="예: 활기찬 에너지">
+                    </div>
+
+                    <div class="diary-form-field diary-form-span-2">
+                        <label for="title">제목</label>
+                        <input type="text" id="title" name="title" value="{{ entry.get('title', '') }}" required placeholder="오늘의 한 줄 제목">
+                    </div>
+
+                    <div class="diary-form-field diary-form-span-2">
+                        <label for="content">내용</label>
+                        <textarea id="content" name="content" rows="7" required placeholder="오늘의 산책, 식사, 컨디션을 기록해보세요.">{{ entry.get('content', '') }}</textarea>
+                    </div>
+
+                    <div class="diary-form-field">
+                        <label for="walk_type">산책 유형</label>
+                        <input type="text" id="walk_type" name="walk_type" value="{{ entry.get('walk_type', '') }}" placeholder="예: 공원 산책">
+                    </div>
+
+                    <div class="diary-form-field">
+                        <label for="weight">몸무게 (kg)</label>
+                        <input type="number" step="0.1" id="weight" name="weight" value="{{ entry.get('weight', '') }}" placeholder="예: 5.4">
+                    </div>
+
+                    <div class="diary-form-field diary-form-span-2">
+                        <label for="image">사진 업로드</label>
+                        <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/gif,image/webp">
+                        {% if entry.get('image_url') %}
+                        <img src="{{ entry.get('image_url') }}" alt="Diary Image" class="diary-form-preview">
+                        {% endif %}
+                    </div>
+
+                    <div class="diary-form-checks diary-form-span-2">
+                        <label class="diary-check-toggle">
+                            <input type="checkbox" name="meal_checked" {% if entry.get('meal_checked') %}checked{% endif %}>
+                            <span>식사 체크</span>
+                        </label>
+                        <label class="diary-check-toggle">
+                            <input type="checkbox" name="water_checked" {% if entry.get('water_checked') %}checked{% endif %}>
+                            <span>수분 섭취 체크</span>
+                        </label>
+                        <label class="diary-check-toggle">
+                            <input type="checkbox" name="walk_checked" {% if entry.get('walk_checked') %}checked{% endif %}>
+                            <span>산책 체크</span>
+                        </label>
+                        <label class="diary-check-toggle">
+                            <input type="checkbox" name="supplement_checked" {% if entry.get('supplement_checked') %}checked{% endif %}>
+                            <span>영양제 체크</span>
+                        </label>
+                    </div>
+
+                    <div class="diary-form-actions diary-form-span-2">
+                        <a href="{{ url_for('diary') }}" class="diary-secondary-btn">취소</a>
+                        <button type="submit" class="diary-primary-btn">{{ '수정 저장' if form_mode == 'edit' else '기록 저장' }}</button>
+                    </div>
+                </form>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

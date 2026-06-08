@@ -1,0 +1,40 @@
+<nav class="{{ sidebar_nav_class | default('sidebar-nav') }}">
+    <a href="{{ url_for('index') }}" class="{{ sidebar_item_class | default('sidebar-item') }}{% if sidebar_active == 'home' %} active{% endif %}">
+        <i data-lucide="home"></i> 홈
+    </a>
+    <a href="{{ url_for('posts') }}" class="{{ sidebar_item_class | default('sidebar-item') }}{% if sidebar_active == 'posts' %} active{% endif %}">
+        <i data-lucide="search"></i> 탐색
+    </a>
+    <a href="{{ url_for('messages_page') }}" class="{{ sidebar_item_class | default('sidebar-item') }}{% if sidebar_active == 'messages' %} active{% endif %} sidebar-item-with-badge">
+        <span class="sidebar-item-icon-wrap">
+            <i data-lucide="mail"></i>
+            {% if unread_message_count > 0 %}
+            <span class="sidebar-unread-badge">{{ unread_message_badge }}</span>
+            {% endif %}
+        </span>
+        메시지
+    </a>
+    <a href="{{ url_for('notifications_page') }}" class="{{ sidebar_item_class | default('sidebar-item') }}{% if sidebar_active == 'notifications' %} active{% endif %} sidebar-item-with-badge">
+        <span class="sidebar-item-icon-wrap">
+            <i data-lucide="bell"></i>
+            {% if unread_notification_count > 0 %}
+            <span class="sidebar-unread-badge sidebar-notification-badge"></span>
+            {% endif %}
+        </span>
+        알림
+    </a>
+    <a href="{{ url_for('mypage') }}" class="{{ sidebar_item_class | default('sidebar-item') }}{% if sidebar_active == 'mypage' %} active{% endif %}">
+        <i data-lucide="user"></i> 마이페이지
+    </a>
+    <a href="{{ url_for('diary') }}" class="{{ sidebar_item_class | default('sidebar-item') }}{% if sidebar_active == 'diary' %} active{% endif %}">
+        <i data-lucide="book-heart"></i> 다이어리
+    </a>
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('admin_users') }}" class="{{ sidebar_item_class | default('sidebar-item') }}{% if sidebar_active == 'admin' %} active{% endif %}">
+        <i data-lucide="shield-check"></i> 유저 관리
+    </a>
+    <a href="{{ url_for('admin_security_logs') }}" class="{{ sidebar_item_class | default('sidebar-item') }}{% if sidebar_active == 'admin-security' %} active{% endif %}">
+        <i data-lucide="shield-alert"></i> 보안 로그
+    </a>
+    {% endif %}
+</nav>

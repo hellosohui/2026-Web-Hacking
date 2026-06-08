@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 반려견 다이어리 | Meongstagram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="diary-body">
+    <main class="profile-layout-container diary-layout-container">
+        <aside class="profile-sidebar diary-sidebar">
+            <div class="sidebar-logo">
+                <a href="{{ url_for('index') }}">Meongstagram</a>
+            </div>
+            {% set sidebar_active = 'diary' %}
+            {% include "components/sidebar_nav.html" %}
+            <div class="diary-sidebar-profile">
+                <div class="diary-sidebar-avatar">
+                    <img src="{{ pet.pet_image_url if pet else user.profile_image_url }}" alt="{{ dog_name }}">
+                </div>
+                <h2>{{ dog_name }}</h2>
+                <p>
+                    {% if pet %}
+                    {{ pet.pet_breed or '우리 집 강아지' }}{% if pet.pet_age %} · {{ pet.pet_age }}살{% endif %}
+                    {% else %}
+                    {{ user.name }}님만의 기록 공간
+                    {% endif %}
+                </p>
+            </div>
+            <div class="sidebar-bottom diary-sidebar-bottom">
+                <a href="{{ url_for('diary_new') }}" class="btn-create-post-sidebar diary-create-btn">오늘 기록하기</a>
+                <a href="{{ url_for('logout') }}" class="diary-logout-link">
+                    <i data-lucide="log-out"></i> 로그아웃
+                </a>
+            </div>
+        </aside>
+
+        <section class="profile-content-area diary-content-area">
+            <header class="diary-topbar">
+                <div>
+                    <h1>나만의 반려견 다이어리</h1>
+                    <p>매일매일 기록하는 성장 일기와 건강 체크리스트</p>
+                </div>
+                <div class="diary-topbar-actions">
+                    <a href="{{ url_for('diary_new') }}" class="diary-primary-btn">
+                        <i data-lucide="square-pen"></i> Log Daily Entry
+                    </a>
+                </div>
+            </header>
+
+            {% with flashes = get_flashed_messages(with_categories=true) %}
+                {% if flashes %}
+                    <div class="diary-flash-stack">
+                        {% for category, message in flashes %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="diary-dashboard-grid">
+                <section class="diary-card diary-metric-card mood-card">
+                    <div class="diary-card-icon mood">
+                        <i data-lucide="smile"></i>
+                    </div>
+                    <span class="diary-card-chip">Today Mood</span>
+                    <p class="diary-card-label">오늘의 기분</p>
+                    <strong id="diaryMoodValue">{{ latest_entry.mood if latest_entry and latest_entry.mood else '기록 없음' }}</strong>
+                </section>
+
+                <section class="diary-card diary-metric-card accent diary-weight-card weight-card">
+                    <div class="diary-card-icon weight">
+                        <i data-lucide="scale"></i>
+                    </div>
+                    <div class="diary-weight-head">
+                        <span class="diary-card-chip">Latest Weight</span>
+                        <button type="button" class="diary-weight-edit-btn" id="weightEditButton">수정</button>
+                    </div>
+                    <p class="diary-card-label">현재 몸무게</p>
+                    <strong id="weightDisplay">
+                        {% if latest_entry and latest_entry.weight is not none %}
+                        {{ '%.1f'|format(latest_entry.weight) }} kg
+                        {% else %}
+                        미기록
+                        {% endif %}
+                    </strong>
+                    <form id="weightForm" class="diary-weight-form hidden">
+                        <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            id="weightInput"
+                            value="{% if latest_entry and latest_entry.weight is not none %}{{ '%.1f'|format(latest_entry.weight) }}{% endif %}"
+                            placeholder="몸무게 입력"
+                        >
+                        <button type="submit" class="diary-inline-btn">저장</button>
+                        <button type="button" class="diary-inline-btn" id="weightCancelButton">취소</button>
+                    </form>
+                </section>
+
+                <section class="diary-card diary-checklist-card checklist-card">
+                    <div class="diary-card-head">
+                        <h2>데일리 건강 체크리스트</h2>
+                        <span><em id="checklistPercentValue">{{ checklist_percent }}</em>% 완료</span>
+                    </div>
+                    <div class="diary-checklist-list checklist-items">
+                        {% for item in checklist_items %}
+                        <div
+                            class="diary-check-item checklist-item {{ 'checked' if item.checked else '' }}"
+                            data-checklist-item-row
+                        >
+                            <span class="diary-check-item-icon">
+                                <i data-lucide="{{ item.icon }}"></i>
+                            </span>
+                            <div class="diary-check-item-copy checklist-content">
+                                <strong>{{ item.label }}</strong>
+                                <p class="diary-check-description-text description-text" data-description-text>{{ item.description }}</p>
+                                <div class="diary-check-description-edit hidden" data-description-editor>
+                                    <input
+                                        type="text"
+                                        value="{{ item.description }}"
+                                        data-description-input
+                                        aria-label="{{ item.label }} 설명 수정"
+                                    >
+                                    <button type="button" class="diary-mini-btn" data-description-save>저장</button>
+                                </div>
+                            </div>
+                            <div class="diary-check-item-actions checklist-actions">
+                                <button
+                                    type="button"
+                                    class="diary-check-toggle-btn check-btn"
+                                    data-checklist-item
+                                    data-field="{{ item.field }}"
+                                    aria-pressed="{{ 'true' if item.checked else 'false' }}"
+                                    aria-label="{{ item.label }} 체크 토글"
+                                >
+                                    <span class="diary-check-item-state">
+                                        <i data-lucide="{{ 'check-circle-2' if item.checked else 'circle' }}"></i>
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="diary-check-edit-btn edit-btn"
+                                    data-description-toggle
+                                    data-settings-field="{{ item.settings_field }}"
+                                    aria-label="{{ item.label }} 문구 수정"
+                                >
+                                    <i data-lucide="pencil-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <div class="diary-main-grid">
+                <section class="diary-feed-column">
+                    {% if diary_entries %}
+                        {% for entry in diary_entries %}
+                        <article class="diary-feed-card">
+                            <div class="diary-feed-date">
+                                <span class="day">{{ entry.date_parts.day }}</span>
+                                <span class="month">{{ entry.date_parts.month }}</span>
+                            </div>
+                            <div class="diary-feed-body">
+                                {% if entry.image_url %}
+                                <img src="{{ entry.image_url }}" alt="{{ entry.title }}" class="diary-feed-image">
+                                {% endif %}
+                                <div class="diary-feed-meta">
+                                    {% if entry.mood %}
+                                    <span class="diary-tag mood">{{ entry.mood }}</span>
+                                    {% endif %}
+                                    {% if entry.walk_type %}
+                                    <span class="diary-tag">{{ entry.walk_type }}</span>
+                                    {% endif %}
+                                    <span class="diary-feed-time">{{ entry.display_time }}</span>
+                                </div>
+                                <div class="diary-feed-copy">
+                                    <h3>{{ entry.title }}</h3>
+                                    <p>{{ entry.content }}</p>
+                                </div>
+                                <div class="diary-feed-footer">
+                                    <div class="diary-feed-stats">
+                                        {% if entry.weight is not none %}
+                                        <span><i data-lucide="scale"></i> {{ '%.1f'|format(entry.weight) }}kg</span>
+                                        {% endif %}
+                                        {% if entry.dog_name %}
+                                        <span><i data-lucide="paw-print"></i> {{ entry.dog_name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="diary-feed-actions">
+                                        <a href="{{ url_for('diary_edit', entry_id=entry.id) }}" class="diary-inline-btn">수정</a>
+                                        <form action="{{ url_for('diary_delete', entry_id=entry.id) }}" method="POST" onsubmit="return confirm('이 기록을 삭제할까요?');">
+                                            <button type="submit" class="diary-inline-btn danger">삭제</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+                        {% endfor %}
+                    {% else %}
+                    <div class="diary-empty-state">
+                        <h2>아직 다이어리 기록이 없습니다.</h2>
+                        <p>오늘의 기분과 건강 체크를 첫 번째 기록으로 남겨보세요.</p>
+                        <a href="{{ url_for('diary_new') }}" class="diary-primary-btn">첫 기록 작성하기</a>
+                    </div>
+                    {% endif %}
+                </section>
+
+                <aside class="diary-side-column">
+                    <section class="diary-card diary-streak-card">
+                        <div class="diary-card-head">
+                            <h2>{{ current_month_label }} 기록 스트릭</h2>
+                            <span>{{ streak_summary.month_entry_count }}일 기록</span>
+                        </div>
+                        <div class="diary-calendar-head">
+                            <span>SUN</span>
+                            <span>MON</span>
+                            <span>TUE</span>
+                            <span>WED</span>
+                            <span>THU</span>
+                            <span>FRI</span>
+                            <span>SAT</span>
+                        </div>
+                        <div class="diary-calendar-grid">
+                            {% for day in calendar_days %}
+                            <span class="diary-calendar-day {{ 'active' if day in streak_summary.month_dates else '' }}">{{ day }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="diary-streak-highlight">
+                            <div class="diary-card-icon streak">
+                                <i data-lucide="flame"></i>
+                            </div>
+                            <div>
+                                <p>현재 스트릭</p>
+                                <strong>{{ streak_summary.current_streak }}일 연속 기록 중!</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="diary-card diary-summary-card">
+                        <div class="diary-card-head">
+                            <h2>오늘의 요약</h2>
+                        </div>
+                        <dl class="diary-summary-list">
+                            <div>
+                                <dt>최신 제목</dt>
+                                <dd>{{ latest_entry.title if latest_entry else '아직 기록 없음' }}</dd>
+                            </div>
+                            <div>
+                                <dt>산책 유형</dt>
+                                <dd>{{ latest_entry.walk_type if latest_entry and latest_entry.walk_type else '미입력' }}</dd>
+                            </div>
+                            <div>
+                                <dt>오늘 체크</dt>
+                                <dd><span id="checklistCountValue">{{ checklist_completed }}</span>/{{ checklist_items|length }} 완료</dd>
+                            </div>
+                            <div>
+                                <dt>총 기록 수</dt>
+                                <dd>{{ diary_entries|length }}개</dd>
+                            </div>
+                        </dl>
+                    </section>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const checklistButtons = Array.from(document.querySelectorAll('[data-checklist-item]'));
+        const checklistRows = Array.from(document.querySelectorAll('[data-checklist-item-row]'));
+        const checklistPercentValue = document.getElementById('checklistPercentValue');
+        const checklistCountValue = document.getElementById('checklistCountValue');
+        const weightEditButton = document.getElementById('weightEditButton');
+        const weightCancelButton = document.getElementById('weightCancelButton');
+        const weightForm = document.getElementById('weightForm');
+        const weightDisplay = document.getElementById('weightDisplay');
+        const weightInput = document.getElementById('weightInput');
+
+        function refreshIcons() {
+            lucide.createIcons();
+        }
+
+        function setChecklistButtonState(button, checked) {
+            button.setAttribute('aria-pressed', checked ? 'true' : 'false');
+            const row = button.closest('[data-checklist-item-row]');
+            row.classList.toggle('checked', checked);
+            const stateIcon = row.querySelector('.diary-check-item-state');
+            stateIcon.innerHTML = checked
+                ? '<i data-lucide="check-circle-2"></i>'
+                : '<i data-lucide="circle"></i>';
+            refreshIcons();
+        }
+
+        async function updateChecklist(field, button) {
+            button.disabled = true;
+            try {
+                const response = await fetch('{{ url_for("diary_toggle_checklist") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ field })
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || '체크리스트 저장에 실패했습니다.');
+                }
+                setChecklistButtonState(button, result.checked);
+                checklistPercentValue.textContent = result.completed_percent;
+                checklistCountValue.textContent = result.completed_count;
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        checklistButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                updateChecklist(button.dataset.field, button);
+            });
+        });
+
+        function closeDescriptionEditor(row) {
+            const text = row.querySelector('[data-description-text]');
+            const editor = row.querySelector('[data-description-editor]');
+            text.classList.remove('hidden');
+            editor.classList.add('hidden');
+        }
+
+        checklistRows.forEach((row) => {
+            const toggleButton = row.querySelector('[data-description-toggle]');
+            const saveButton = row.querySelector('[data-description-save]');
+            const input = row.querySelector('[data-description-input]');
+            const text = row.querySelector('[data-description-text]');
+            const editor = row.querySelector('[data-description-editor]');
+            const settingsField = toggleButton.dataset.settingsField;
+
+            toggleButton.addEventListener('click', () => {
+                checklistRows.forEach((otherRow) => {
+                    if (otherRow !== row) {
+                        closeDescriptionEditor(otherRow);
+                    }
+                });
+                text.classList.add('hidden');
+                editor.classList.remove('hidden');
+                input.focus();
+                input.select();
+            });
+
+            async function saveDescription() {
+                saveButton.disabled = true;
+                try {
+                    const response = await fetch('{{ url_for("diary_update_checklist_text") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            field: settingsField,
+                            value: input.value
+                        })
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.message || '문구 저장에 실패했습니다.');
+                    }
+                    text.textContent = result.value;
+                    input.value = result.value;
+                    closeDescriptionEditor(row);
+                } catch (error) {
+                    alert(error.message);
+                } finally {
+                    saveButton.disabled = false;
+                }
+            }
+
+            saveButton.addEventListener('click', saveDescription);
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    saveDescription();
+                }
+                if (event.key === 'Escape') {
+                    closeDescriptionEditor(row);
+                }
+            });
+        });
+
+        function showWeightForm() {
+            weightForm.classList.remove('hidden');
+            weightDisplay.classList.add('hidden');
+            weightEditButton.classList.add('hidden');
+            weightInput.focus();
+        }
+
+        function hideWeightForm() {
+            weightForm.classList.add('hidden');
+            weightDisplay.classList.remove('hidden');
+            weightEditButton.classList.remove('hidden');
+        }
+
+        weightEditButton.addEventListener('click', showWeightForm);
+        weightCancelButton.addEventListener('click', hideWeightForm);
+
+        weightForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            try {
+                const response = await fetch('{{ url_for("diary_update_weight") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ weight: weightInput.value })
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || '몸무게 저장에 실패했습니다.');
+                }
+                weightDisplay.textContent = result.weight_label;
+                weightInput.value = result.weight !== null ? Number(result.weight).toFixed(1) : '';
+                hideWeightForm();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+    </script>
+</body>
+</html>

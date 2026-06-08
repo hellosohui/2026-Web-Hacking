@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meongstagram | 유저 관리</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-beige">
+    <main class="profile-layout-container">
+        <aside class="profile-sidebar">
+            <div class="sidebar-logo">
+                <a href="{{ url_for('index') }}">Meongstagram</a>
+            </div>
+            {% set sidebar_active = 'admin' %}
+            {% include "components/sidebar_nav.html" %}
+            <div class="sidebar-bottom">
+                <a href="{{ url_for('create_post') }}" class="btn-create-post-sidebar">게시물 만들기</a>
+            </div>
+        </aside>
+
+        <section class="profile-content-area admin-content-area">
+            <div class="admin-page-shell">
+                <header class="admin-page-header">
+                    <div>
+                        <p class="admin-page-kicker">Admin</p>
+                        <h1>유저 관리</h1>
+                        <p class="admin-page-copy">관리자는 전체 사용자 계정과 활동 현황을 확인하고 계정을 삭제할 수 있습니다.</p>
+                    </div>
+                    <div class="admin-page-summary">
+                        <span>전체 사용자 {{ users|length }}명</span>
+                    </div>
+                </header>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}" style="margin-bottom: 16px;">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <section class="admin-users-grid">
+                    {% for managed_user in users %}
+                    <article class="admin-user-card">
+                        <div class="admin-user-main">
+                            <img src="{{ managed_user.profile_image_url }}" alt="{{ managed_user.name }}" class="admin-user-avatar">
+                            <div class="admin-user-copy">
+                                <div class="admin-user-topline">
+                                    <h2>{{ managed_user.name }}</h2>
+                                    <span class="admin-user-handle">{{ managed_user.display_handle }}</span>
+                                    <span class="admin-role-badge {{ 'is-admin' if managed_user.role == 'admin' else '' }}">
+                                        {{ '관리자' if managed_user.role == 'admin' else '일반 사용자' }}
+                                    </span>
+                                </div>
+                                <p>{{ managed_user.email }}</p>
+                                <div class="admin-user-stats">
+                                    <span>게시물 {{ managed_user.post_count or 0 }}</span>
+                                    <span>팔로워 {{ managed_user.follower_count or 0 }}</span>
+                                    <span>ID {{ managed_user.id }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="admin-user-actions">
+                            <a href="{{ managed_user.profile_url }}" class="admin-user-link">프로필 보기</a>
+                            {% if managed_user.id == session.get('user_id') %}
+                            <button type="button" class="admin-user-delete" disabled>현재 계정</button>
+                            {% else %}
+                            <form method="post" action="{{ url_for('admin_delete_user', user_id=managed_user.id) }}">
+                                <button type="submit" class="admin-user-delete" onclick="return confirm('정말 이 계정을 삭제하시겠습니까? 관련 데이터도 함께 삭제됩니다.');">
+                                    계정 삭제
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% endfor %}
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

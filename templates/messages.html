@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meongstagram | 메시지</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="messages-body">
+    <main class="profile-layout-container messages-layout-container">
+        <aside class="profile-sidebar">
+            <div class="sidebar-logo">
+                <a href="{{ url_for('index') }}">Meongstagram</a>
+            </div>
+            {% set sidebar_active = 'messages' %}
+            {% include "components/sidebar_nav.html" %}
+            <div class="sidebar-bottom">
+                <a href="{{ url_for('create_post') }}" class="btn-create-post-sidebar">게시물 만들기</a>
+            </div>
+        </aside>
+
+        <section class="profile-content-area messages-content-area">
+            <div class="messages-content-shell">
+                <aside class="messages-list-panel">
+                    <div class="messages-list-head">
+                        <div>
+                            <p class="messages-kicker">DM</p>
+                            <h1>메시지</h1>
+                            <p class="messages-sidebar-copy">산책 메이트와 1:1로 이야기를 나눠보세요.</p>
+                        </div>
+                        <a href="{{ url_for('community') }}" class="messages-compose-link" aria-label="새 친구 찾기">
+                            <i data-lucide="square-pen"></i>
+                        </a>
+                    </div>
+
+                    {% with flashes = get_flashed_messages(with_categories=true) %}
+                        {% if flashes %}
+                            {% for category, message in flashes %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="get" action="{{ url_for('messages_page') }}" class="messages-search-form">
+                        {% if active_conversation %}
+                        <input type="hidden" name="conversation" value="{{ active_conversation.id }}">
+                        {% endif %}
+                        <i data-lucide="search"></i>
+                        <input type="text" name="q" value="{{ search_query }}" placeholder="친구 또는 이메일 검색">
+                        <button type="submit">검색</button>
+                    </form>
+
+                    {% if search_query %}
+                    <section class="messages-search-results">
+                        <div class="messages-section-head">
+                            <h2>검색 결과</h2>
+                            <span>{{ search_results|length }}명</span>
+                        </div>
+                        <div class="messages-search-list">
+                            {% for user in search_results %}
+                            <a href="{{ url_for('start_conversation', user_id=user.id) }}" class="messages-search-item">
+                                <img src="{{ user.profile_image_url }}" alt="{{ user.name }}">
+                                <div>
+                                    <strong>{{ user.name }}</strong>
+                                    <p>{{ user.display_handle }} · {{ user.status_message or user.email }}</p>
+                                </div>
+                                <span>대화 시작</span>
+                            </a>
+                            {% else %}
+                            <div class="messages-empty-inline">일치하는 사용자가 없습니다.</div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                    {% endif %}
+
+                    <section class="messages-conversation-list-wrap">
+                        <div class="messages-section-head">
+                            <h2>대화방</h2>
+                            <span>{{ conversations|length }}개</span>
+                        </div>
+                        <div class="messages-conversation-list">
+                            {% for conversation in conversations %}
+                            <a
+                                href="{{ url_for('messages_page', conversation=conversation.id) }}"
+                                class="messages-conversation-item {{ 'active' if conversation.is_active else '' }}"
+                                data-conversation-id="{{ conversation.id }}"
+                            >
+                                <div class="messages-conversation-avatar-wrap">
+                                    <img src="{{ conversation.partner_avatar }}" alt="{{ conversation.partner_name }}" class="messages-conversation-avatar">
+                                    {% if conversation.has_unread %}
+                                    <span class="messages-conversation-dot"></span>
+                                    {% endif %}
+                                </div>
+                                <div class="messages-conversation-text">
+                                    <div class="messages-conversation-topline">
+                                        <strong>{{ conversation.partner_name }}</strong>
+                                        <span data-conversation-time>{{ conversation.display_time }}</span>
+                                    </div>
+                                    <p data-conversation-preview>{{ conversation.partner_handle }} · {{ conversation.last_message_preview }}</p>
+                                </div>
+                                {% if conversation.unread_count %}
+                                <span class="messages-unread-pill">{{ conversation.unread_count }}</span>
+                                {% endif %}
+                            </a>
+                            {% else %}
+                            <div class="messages-empty-sidebar">
+                                아직 시작된 대화가 없습니다.<br>프로필에서 메시지 보내기를 눌러 첫 대화를 시작해 보세요.
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </aside>
+
+                <section class="messages-chat-panel">
+                    {% if active_conversation %}
+                    <div class="messages-panel-header">
+                        <div class="messages-panel-user">
+                            <a href="{{ active_conversation.partner_profile_url }}" class="messages-panel-avatar">
+                                <img src="{{ active_conversation.partner_avatar }}" alt="{{ active_conversation.partner_name }}">
+                            </a>
+                            <div>
+                                <a href="{{ active_conversation.partner_profile_url }}">{{ active_conversation.partner_name }}</a>
+                                <p>
+                                    {% if active_conversation.partner_location %}
+                                        {{ active_conversation.partner_handle }} · {{ active_conversation.partner_location }}
+                                    {% else %}
+                                        {{ active_conversation.partner_handle }} · {{ active_conversation.partner_status_message or '따뜻한 대화를 나눠보세요.' }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="messages-panel-actions">
+                            <a href="{{ active_conversation.partner_profile_url }}" class="messages-panel-action">
+                                <i data-lucide="user-round"></i>
+                            </a>
+                            {% if active_conversation.is_partner_followed %}
+                            <span class="messages-follow-badge">팔로우 중</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="messages-thread" id="messageThread" data-thread>
+                        {% for message in messages %}
+                        <article class="message-row {{ 'mine' if message.is_mine else 'theirs' }}" data-message-id="{{ message.id }}">
+                            <div class="message-bubble-wrap">
+                                <div class="message-bubble">{{ message.content }}</div>
+                                <span class="message-time">{{ message.display_time }}</span>
+                            </div>
+                        </article>
+                        {% else %}
+                        <div class="messages-thread-empty">
+                            첫 메시지를 보내 대화를 시작해 보세요.
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <form
+                        id="messageForm"
+                        class="messages-compose-form"
+                        data-send-url="{{ url_for('send_message', conversation_id=active_conversation.id) }}"
+                        data-conversation-id="{{ active_conversation.id }}"
+                    >
+                        <label class="messages-compose-input-wrap">
+                            <i data-lucide="message-circle-more"></i>
+                            <input type="text" name="content" maxlength="1000" placeholder="{{ active_conversation.partner_name }}님에게 메시지를 입력하세요..." autocomplete="off">
+                        </label>
+                        <button type="submit" class="messages-send-btn">전송</button>
+                    </form>
+                    {% else %}
+                    <div class="messages-panel-empty">
+                        <div class="messages-panel-empty-card">
+                            <div class="messages-panel-empty-icon"><i data-lucide="messages-square"></i></div>
+                            <h2>대화를 선택해 주세요</h2>
+                            <p>가운데 목록에서 기존 대화를 열거나, 검색으로 새 메시지를 시작할 수 있습니다.</p>
+                            <a href="{{ url_for('community') }}" class="messages-empty-cta">커뮤니티에서 친구 찾기</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='messages.js') }}"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

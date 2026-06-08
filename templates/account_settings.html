@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>계정 설정 | Meongstagram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="profile-edit-body">
+    <header class="profile-edit-topbar">
+        <div class="profile-edit-topbar-inner">
+            <a href="{{ url_for('index') }}" class="profile-edit-logo">Meongstagram</a>
+            <div class="profile-edit-topbar-actions">
+                <a href="{{ url_for('edit_profile') }}" class="profile-edit-icon-btn" aria-label="프로필 편집">
+                    <i data-lucide="user-round-cog"></i>
+                </a>
+                <a href="{{ url_for('mypage') }}" class="profile-edit-user-chip">
+                    <img src="{{ user.profile_image_url }}" alt="User">
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="profile-edit-main">
+        <section class="profile-edit-hero">
+            <h1>계정 설정</h1>
+            <p>이메일, 비밀번호, 계정 관련 항목을 안전하게 관리할 수 있습니다.</p>
+        </section>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="profile-edit-flash-list">
+                    {% for category, message in messages %}
+                        <div class="profile-edit-flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('account_settings') }}" method="POST" class="profile-edit-form-shell">
+            <section class="profile-edit-card">
+                <div class="profile-edit-card-header">
+                    <span class="profile-edit-card-icon"><i data-lucide="mail"></i></span>
+                    <h2>이메일 설정</h2>
+                </div>
+
+                <div class="profile-edit-field-stack">
+                    <div class="profile-edit-field">
+                        <label for="accountEmail">Email Address</label>
+                        <input type="email" id="accountEmail" name="email" value="{{ user.email }}" readonly>
+                        <p class="account-settings-muted">이메일은 변경할 수 없습니다.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="profile-edit-card">
+                <div class="profile-edit-card-header">
+                    <span class="profile-edit-card-icon"><i data-lucide="shield-check"></i></span>
+                    <h2>비밀번호 재설정</h2>
+                </div>
+
+                <p class="account-settings-note">현재 비밀번호를 확인한 뒤 새 비밀번호로 변경할 수 있습니다. 새 비밀번호는 기존 정책을 그대로 따릅니다.</p>
+
+                <div class="profile-edit-password-grid">
+                    <div class="profile-edit-field">
+                        <label for="accountCurrentPassword">CURRENT PASSWORD</label>
+                        <input type="password" id="accountCurrentPassword" name="current_password" placeholder="현재 비밀번호">
+                    </div>
+                    <div class="profile-edit-field">
+                        <label for="accountNewPassword">NEW PASSWORD</label>
+                        <input type="password" id="accountNewPassword" name="new_password" placeholder="새 비밀번호">
+                    </div>
+                </div>
+
+                <div class="profile-edit-field account-settings-field">
+                    <label for="accountConfirmNewPassword">CONFIRM NEW PASSWORD</label>
+                    <input type="password" id="accountConfirmNewPassword" name="confirm_new_password" placeholder="새 비밀번호 확인">
+                </div>
+            </section>
+
+            <section class="profile-edit-card">
+                <div class="profile-edit-card-header">
+                    <span class="profile-edit-card-icon info"><i data-lucide="info"></i></span>
+                    <h2>계정 관리</h2>
+                </div>
+
+                <div class="account-settings-help">
+                    <p>계정 설정은 본인만 접근할 수 있습니다.</p>
+                    <p>이메일 변경 후에도 기존 프로필, 게시물, 다이어리 기록은 그대로 유지됩니다.</p>
+                    <p>공용 기기에서는 설정 변경 후 반드시 로그아웃해 주세요.</p>
+                </div>
+
+                <a href="{{ url_for('logout') }}" class="account-settings-logout">
+                    <i data-lucide="log-out"></i>
+                    로그아웃
+                </a>
+            </section>
+
+            <div class="profile-edit-actions">
+                <a href="{{ url_for('mypage') }}" class="profile-edit-cancel-btn">취소</a>
+                <button type="submit" class="profile-edit-save-btn">설정 저장</button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

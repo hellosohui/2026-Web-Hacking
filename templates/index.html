@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meongstagram | 가장 따뜻한  반려견 커뮤니티</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo">
+                <span class="logo-text">Meongstagram</span>
+            </div>
+            <nav class="nav">
+                <a href="{{ url_for('index') }}" class="nav-link active">Discover</a>
+                <a href="{{ url_for('community') }}" class="nav-link">Community</a>
+                <a href="{{ url_for('mypage') }}" class="nav-link">My Page</a>
+            </nav>
+            <div class="header-actions">
+                <div class="search-bar">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="Search">
+                </div>
+                {% if session.get('user_id') %}
+                    <span class="user-greeting" style="font-size: 14px; font-weight: 700; color: #8B4513;">{{ session.user_name }}님 안녕하세요!</span>
+                    <a href="{{ url_for('logout') }}" class="btn-logout" style="font-size: 14px; font-weight: 700; color: #E67E22; text-decoration: none; margin-left: 10px;">로그아웃</a>
+                {% endif %}
+                <a href="{{ url_for('notifications_page') }}" class="icon-btn icon-btn-link notification-icon-link">
+                    <span class="notification-icon-wrap">
+                        <i data-lucide="bell"></i>
+                        {% if unread_notification_count > 0 %}
+                        <span class="notification-dot-badge"></span>
+                        {% endif %}
+                    </span>
+                </a>
+                {% if session.get('user_id') %}
+                <a href="{{ url_for('messages_page') }}" class="icon-btn icon-btn-link"><i data-lucide="mail"></i></a>
+                {% else %}
+                <button class="icon-btn"><i data-lucide="paw-print"></i></button>
+                {% endif %}
+                <div class="user-profile">
+                    <a href="{{ url_for('mypage') }}">
+                        <img src="{{ current_user.profile_image_url if current_user else 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' }}" alt="User">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container hero-container">
+                <div class="hero-content">
+                    <div class="badge">★ No.1 반려견 커뮤니티</div>
+                    <h1 class="hero-title">가장 따뜻한 <br> 반려견 커뮤니티,<br><span class="highlight">멍스타그램</span></h1>
+                    <p class="hero-description">세상 모든 강아지들의 특별한 일상을 공유하세요. 따뜻한 이웃들과 함께 소통하며 행복한 반려생활을 만들어 갑니다.</p>
+                    <div class="hero-btns">
+                        <a href="{{ url_for('login') }}" class="btn btn-primary">지금 시작하기</a>
+                        <a href="{{ url_for('community', preview=1) }}" class="btn btn-secondary">앱 둘러보기</a>
+                    </div>
+                </div>
+                <div class="hero-image-wrapper">
+                    <img src="{{ url_for('static', filename='bappul.jpg') }}" alt="Happy Dog" class="hero-img">
+                    <div class="floating-card hero-floating-card">
+                        <div class="card-user">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=DogLover" alt="User">
+                            <div class="user-info">
+                                <span class="tag">Today's Pick</span>
+                                <span class="name">밥풀이의 1살 기념사진 촬영</span>
+                            </div>
+                        </div>
+                        <p class="card-text">"밥풀이의 첫번째 생일을 맞아 사진관에서 촬영하고 왔..."</p>
+                        <div class="card-stats">
+                            <span>❤️ 1.2M likes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="featured">
+            <div class="container">
+                <div class="section-header">
+                    <div class="title-group">
+                        <h2 class="section-title">Featured Meongstagrams</h2>
+                        <p class="section-subtitle">지금 가장 인기 있는 멍스타그램 포스트</p>
+                    </div>
+                    <a href="{{ url_for('community') }}" class="view-all">전체보기 <i data-lucide="chevron-right"></i></a>
+                </div>
+                
+                <div class="featured-grid">
+                    {% for post in featured_posts %}
+                    <article class="post-card" data-post-card>
+                        <div class="post-img-wrapper">
+                            <img src="{{ post.display_image }}" alt="Featured Post" class="post-img">
+                            <span class="post-label">{{ post.location or 'COMMUNITY' }}</span>
+                        </div>
+                        <div class="post-content">
+                            <div class="post-user">
+                                <a href="{{ post.author_profile_url }}">
+                                    <img src="{{ post.author_avatar }}" alt="User">
+                                </a>
+                                <div class="user-details">
+                                    <a href="{{ post.author_profile_url }}" class="featured-user-link">
+                                        <span class="user-name">{{ post.author_name }}</span>
+                                    </a>
+                                    <span class="feed-user-handle">{{ post.author_handle }}</span>
+                                    <span class="post-time">{{ post.display_time }}</span>
+                                </div>
+                            </div>
+                            <p class="post-text">{{ post.content_preview }}{% if post.content|length > 110 %}...{% endif %}</p>
+                            <div class="post-footer">
+                                <div class="post-stats">
+                                    <button
+                                        class="post-stat-btn like-toggle-btn {{ 'liked' if post.is_liked else '' }}"
+                                        data-like-button
+                                        data-post-id="{{ post.id }}"
+                                    >
+                                        <i data-lucide="heart"></i>
+                                        <span data-like-count>{{ post.like_count }}</span>
+                                    </button>
+                                    <a href="{{ url_for('post_comments', post_id=post.id) }}" class="post-stat-btn">
+                                        <i data-lucide="message-circle"></i>
+                                        <span>{{ post.comment_count }}</span>
+                                    </a>
+                                </div>
+                                <button class="bookmark-btn"><i data-lucide="bookmark"></i></button>
+                            </div>
+                        </div>
+                    </article>
+                    {% else %}
+                    <div class="featured-empty-state">
+                        아직 커뮤니티 게시물이 없습니다. 첫 게시물을 작성해 Featured 영역을 채워보세요.
+                    </div>
+                    {% endfor %}
+
+                    <a href="{{ url_for('create_post') }}" class="fab-btn" aria-label="게시물 작성하기"><i data-lucide="plus"></i></a>
+                </div>
+            </div>
+        </section>
+
+        <section class="services">
+            <div class="container text-center">
+                <h2 class="section-title">더욱 풍성한 멍스타그램의 서비스</h2>
+                <p class="section-subtitle">아이들의 건강부터 즐거운 모임까지, 반려견을 위한 모든 것을 한 곳에서 만나보세요.</p>
+                
+                <div class="services-grid">
+                    <div class="service-card">
+                        <div class="service-icon"><i data-lucide="book-open"></i></div>
+                        <h3>나만의 반려견 다이어리</h3>
+                        <p>매일매일 기록하는 성장 일기와 건강 체크리스트로 소중한 순간을 남기세요.</p>
+                        <a href="{{ url_for('diary') }}" class="service-link-btn">다이어리 열기</a>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon"><i data-lucide="briefcase"></i></div>
+                        <h3>따뜻한 전문가 상담</h3>
+                        <p>행동 교정부터 영양까지 각 분야 전문가들이 실시간으로 고민을 해결해 드립니다.</p>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon"><i data-lucide="shopping-bag"></i></div>
+                        <h3>엄선된 스토어</h3>
+                        <p>멍스타그램 유저들이 직접 사용해보고 검증한 프리미엄 반려견 용품을 만나보세요.</p>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon"><i data-lucide="users"></i></div>
+                        <h3>오프라인 정모</h3>
+                        <p>가까운 이웃들과 오프라인 산책 모임을 통해 새로운 친구를 만들어 주세요.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta">
+            <div class="container cta-container">
+                <h2 class="cta-title">당신의 반려견도<br>스타가 될 수 있어요!</h2>
+                <p class="cta-text">지금 멍스타그램 앱을 다운로드하고 첫 번째 포스트를 남겨보세요. 전 세계 친구들이 기다리고 있답니다.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-container">
+            <div class="footer-left">
+                <span class="footer-logo">Meongstagram</span>
+                <p class="copyright">© 2024 Meongstagram. Handcrafted for your best friend.</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">About</a>
+                <a href="#">Privacy</a>
+                <a href="#">Safety</a>
+                <a href="#">Terms</a>
+            </div>
+            <div class="footer-social">
+                <a href="#"><i data-lucide="instagram"></i></a>
+                <a href="#"><i data-lucide="twitter"></i></a>
+                <a href="#"><i data-lucide="facebook"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='post_interactions.js') }}"></script>
+</body>
+</html>

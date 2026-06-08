@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meongstagram | Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="login-bg">
+    <main class="login-page">
+        <div class="login-card">
+            <div class="login-left">
+                <div class="logo">
+                   <a href="{{ url_for('index') }}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px;">
+                       <i data-lucide="paw-print"></i> 
+                       <span>Meongstagram</span>
+                   </a>
+                </div>
+                <h1 class="welcome-text">멍스타그램에 오신 것을<br>환영합니다</h1>
+                <p class="welcome-desc">반려견과 함께하는 소중한 일상을 시작해 보세요. 당신의 강아지가 들려주는 특별한 이야기를 기다리고 있습니다.</p>
+                <div class="dog-portrait-wrapper">
+                    <img src="{{ url_for('static', filename='login_dog.png') }}" alt="Happy Dog" class="dog-portrait">
+                    <div class="heart-badge-float">
+                        <i data-lucide="heart"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="login-right">
+                <p class="login-instruction">로그인하여 친구들의 소식을 확인하세요</p>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}" style="color: {{ 'red' if category == 'danger' else 'green' }}; margin-bottom: 16px; font-size: 14px; font-weight: 700;">{{ message }}</div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                <form class="login-form" action="{{ url_for('login') }}" method="POST" id="login-form">
+                    <div class="form-group">
+                        <label>이메일 또는 아이디</label>
+                        <input type="text" name="identifier" placeholder="example@meong.com 또는 hansohui" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="label-row">
+                            <label>비밀번호</label>
+                            <div style="font-size: 13px; font-weight: 600;">
+                                <a href="{{ url_for('find_id') }}" style="color: #666; text-decoration: none;">아이디 찾기</a>
+                                <span style="color: #EEE; margin: 0 4px;">|</span>
+                                <a href="{{ url_for('reset_password') }}" style="color: #666; text-decoration: none;">비밀번호 찾기</a>
+                            </div>
+                        </div>
+                        <input type="password" name="password" placeholder="••••••••" required>
+                    </div>
+                    
+                    <button type="submit" class="login-submit">로그인</button>
+                    
+                    <div class="divider">
+                        <span>또는</span>
+                    </div>
+                    
+                    <div class="social-login-grid">
+                        <button type="button" class="social-btn google-btn">
+                            <img src="https://www.google.com/favicon.ico" width="20" height="20" alt="Google">
+                            <span>Google</span>
+                        </button>
+                        <button type="button" class="social-btn kakao-btn">
+                            <i data-lucide="message-square" fill="black"></i>
+                            <span>카카오톡</span>
+                        </button>
+                    </div>
+                    
+                    <div class="signup-row">
+                        계정이 없으신가요? <a href="{{ url_for('signup') }}">회원가입하기</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <footer class="login-footer">
+            <div class="footer-left">
+                <span>© 2024 Meongstagram. Built for the Pack.</span>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Support</a>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            const sqlFilterPatterns = [
+                /\b(?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|UNION)\b/i,
+                /(?:'|")?\s*OR\s+(?:'?\d+'?\s*=\s*'?\d+'?|'.*'\s*=\s*'.*'|".*"\s*=\s*".*")/i,
+                /--/,
+                /;\s*--/i,
+                /\/\*|\*\//,
+                /@@/,
+                /\b(?:char|nchar|varchar|nvarchar)\s*\(/i
+            ];
+            const hasSqlPattern = (value) => sqlFilterPatterns.some((pattern) => pattern.test(String(value || '')));
+
+            loginForm.addEventListener('submit', (event) => {
+                const identifier = loginForm.elements.identifier?.value;
+                const password = loginForm.elements.password?.value;
+                if (hasSqlPattern(identifier) || hasSqlPattern(password)) {
+                    event.preventDefault();
+                    window.alert('비정상적인 입력입니다.');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meongstagram | Find ID</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="login-bg">
+    <main class="login-page">
+        <div class="login-card">
+            <div class="login-left">
+                <div class="logo">
+                    <a href="{{ url_for('index') }}"
+                        style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px;">
+                        <i data-lucide="paw-print"></i>
+                        <span>Meongstagram</span>
+                    </a>
+                </div>
+                <h1 class="welcome-text">아이디 찾기</h1>
+                <p class="welcome-desc">가입하실 때 사용하신 이름을 입력해 주세요.</p>
+                <div class="dog-portrait-wrapper">
+                    <img src="{{ url_for('static', filename='login_dog.png') }}" alt="Happy Dog" class="dog-portrait">
+                </div>
+            </div>
+
+            <div class="login-right">
+                <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 30px;">아이디(이메일) 찾기</h2>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}"
+                    style="color: {{ 'red' if category == 'danger' else 'green' }}; margin-bottom: 16px; font-size: 14px; font-weight: 700;">
+                    {{ message }}</div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form class="login-form" action="{{ url_for('find_id') }}" method="POST">
+                    <div class="form-group">
+                        <label>이름</label>
+                        <input type="text" name="name" placeholder="홍길동" required>
+                    </div>
+
+                    <button type="submit" class="login-submit">아이디 찾기</button>
+
+                    <div class="signup-row" style="margin-top: 20px;">
+                        기억나셨나요? <a href="{{ url_for('login') }}">로그인하기</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

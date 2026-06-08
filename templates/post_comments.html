@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ post.author_name }}님의 게시물 | Meongstagram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="post-detail-body">
+    <header class="post-detail-header">
+        <div class="post-detail-header-inner">
+            <div class="post-detail-branding">
+                <a href="{{ request.referrer or url_for('community') }}" class="detail-back-link">
+                    <i data-lucide="arrow-left"></i>
+                </a>
+                <a href="{{ url_for('index') }}" class="detail-logo">Meongstagram</a>
+            </div>
+            <div class="post-detail-top-actions">
+                <button type="button" class="detail-top-icon"><i data-lucide="search"></i></button>
+                <a href="{{ url_for('notifications_page') }}" class="detail-top-icon detail-top-link notification-icon-link">
+                    <span class="notification-icon-wrap">
+                        <i data-lucide="bell"></i>
+                        {% if unread_notification_count > 0 %}
+                        <span class="notification-dot-badge"></span>
+                        {% endif %}
+                    </span>
+                </a>
+                <a href="{{ url_for('mypage') }}" class="detail-profile-chip">
+                    <img src="{{ current_user.profile_image_url if current_user else 'https://api.dicebear.com/7.x/avataaars/svg?seed=User' }}" alt="나">
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="post-detail-layout" data-post-id="{{ post.id }}" data-post-author-id="{{ post.user_id }}">
+        <section class="post-detail-left">
+            <div class="post-detail-media-shell">
+                <img src="{{ post.display_image }}" alt="게시물 이미지" class="post-detail-media">
+
+                <div class="post-detail-floating-stats">
+                    <button
+                        class="post-detail-stat-btn like-toggle-btn {{ 'liked' if post.is_liked else '' }}"
+                        data-like-button
+                        data-post-id="{{ post.id }}"
+                    >
+                        <i data-lucide="heart"></i>
+                        <span data-like-count>{{ post.like_count }}</span>
+                    </button>
+                    <a href="#commentComposerInput" class="post-detail-stat-btn comment-anchor-btn">
+                        <i data-lucide="message-square"></i>
+                        <span data-comment-count>{{ post.comment_count }}</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="post-detail-summary-card">
+                <div class="post-detail-author-row">
+                    <div class="post-detail-author">
+                        <a href="{{ post.author_profile_url }}">
+                            <img src="{{ post.author_avatar }}" alt="작성자" class="post-detail-author-avatar">
+                        </a>
+                        <div>
+                            <a href="{{ post.author_profile_url }}" class="post-detail-author-name">{{ post.author_name }}</a>
+                            <div class="post-detail-author-handle">{{ post.author_handle }}</div>
+                            <div class="post-detail-location">
+                                <i data-lucide="map-pin"></i>
+                                <span>{{ post.location or '위치 정보 없음' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if session.get('user_id') and session.get('user_id') != post.user_id %}
+                    <button
+                        type="button"
+                        class="post-detail-follow-btn {{ 'following' if is_following_author else '' }}"
+                        data-follow-button
+                        data-user-id="{{ post.user_id }}"
+                    >{{ '팔로잉' if is_following_author else '팔로우' }}</button>
+                    {% endif %}
+                </div>
+
+                <div class="post-detail-copy">
+                    <p>{{ post.content }}</p>
+                    {% if post.hashtags %}
+                    <p class="post-detail-tags">{{ post.hashtags }}</p>
+                    {% endif %}
+                    <div class="post-detail-meta-line">
+                        <span>{{ post.display_time }}</span>
+                        <span>좋아요 <strong data-like-count>{{ post.like_count }}</strong></span>
+                        <span>댓글 <strong data-comment-count>{{ post.comment_count }}</strong></span>
+                    </div>
+                </div>
+
+                <div class="post-detail-actions">
+                    <button
+                        type="button"
+                        class="post-detail-action like-toggle-btn {{ 'liked' if post.is_liked else '' }}"
+                        data-like-button
+                        data-post-id="{{ post.id }}"
+                    >
+                        <i data-lucide="heart"></i>
+                        좋아요
+                    </button>
+                    <a href="#commentComposerInput" class="post-detail-action active">
+                        <i data-lucide="message-circle"></i>
+                        댓글
+                    </a>
+                    <button type="button" class="post-detail-action" data-share-button>
+                        <i data-lucide="send"></i>
+                        공유
+                    </button>
+                    {% if post.image_url %}
+                    <a href="{{ url_for('download_post_image', post_id=post.id) }}" class="post-detail-action">
+                        <i data-lucide="download"></i>
+                        사진 다운로드
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <aside class="post-detail-comments-panel">
+            <div class="comments-panel-card">
+                <div class="comments-panel-header">
+                    <div>
+                        <h2>댓글 <span id="commentCount">{{ post.comment_count }}</span></h2>
+                        <p>게시물에 남겨진 대화를 확인해 보세요.</p>
+                    </div>
+                </div>
+
+                <div class="comment-list detail-comment-list" id="commentList">
+                    {% for comment in comments %}
+                    <article class="comment-item" data-comment-id="{{ comment.id }}">
+                        <img src="{{ comment.author_avatar }}" alt="작성자" class="comment-avatar">
+                        <div class="comment-bubble">
+                            <div class="comment-meta-row">
+                                <div class="comment-meta">
+                                    <strong>{{ comment.author_name }}</strong>
+                                    <span class="comment-handle">{{ comment.author_handle }}</span>
+                                    <span class="comment-time">{{ comment.display_time }}{% if comment.is_edited %} · 수정됨{% endif %}</span>
+                                </div>
+                                {% if comment.can_edit or comment.can_delete %}
+                                <div class="comment-actions">
+                                    <button type="button" class="comment-menu-btn" data-comment-menu>
+                                        <i data-lucide="more-horizontal"></i>
+                                    </button>
+                                    <div class="comment-menu-popover" hidden>
+                                        {% if comment.can_edit %}
+                                        <button type="button" data-edit-comment>수정</button>
+                                        {% endif %}
+                                        {% if comment.can_delete %}
+                                        <button type="button" data-delete-comment>삭제</button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <p class="comment-text" data-comment-text>{{ comment.content }}</p>
+                            <form class="comment-edit-form" data-comment-edit-form hidden>
+                                <textarea name="content" rows="3">{{ comment.content }}</textarea>
+                                <div class="comment-edit-actions">
+                                    <button type="button" class="comment-secondary-btn" data-cancel-edit>취소</button>
+                                    <button type="submit" class="comment-primary-btn">저장</button>
+                                </div>
+                            </form>
+                            <div class="detail-comment-footer">
+                                <button type="button" class="comment-reply-hint">답글 달기</button>
+                            </div>
+                        </div>
+                    </article>
+                    {% else %}
+                    <div class="comment-empty-state" id="commentEmptyState">
+                        아직 댓글이 없습니다. 가장 먼저 따뜻한 한마디를 남겨보세요.
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="comment-composer detail-comment-composer">
+                    <form id="commentComposerForm" class="comment-composer-form">
+                        <img
+                            src="{{ current_user.profile_image_url if current_user else 'https://api.dicebear.com/7.x/avataaars/svg?seed=User' }}"
+                            alt="내 프로필"
+                            class="comment-composer-avatar"
+                        >
+                        <div class="comment-composer-input-wrap">
+                            <textarea name="content" id="commentComposerInput" rows="1" placeholder="{{ post.author_name }}님에게 메시지를 남겨주세요..." {% if not session.get('user_id') %}disabled{% endif %}></textarea>
+                            <button type="button" class="comment-emoji-btn">
+                                <i data-lucide="smile"></i>
+                            </button>
+                        </div>
+                        <button type="submit" class="comment-submit-btn" {% if not session.get('user_id') %}disabled{% endif %}>게시</button>
+                    </form>
+                    {% if not session.get('user_id') %}
+                    <p class="comment-login-hint">댓글을 작성하려면 로그인해 주세요.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <template id="commentItemTemplate">
+        <article class="comment-item" data-comment-id="">
+            <img src="" alt="작성자" class="comment-avatar">
+            <div class="comment-bubble">
+                <div class="comment-meta-row">
+                    <div class="comment-meta">
+                        <strong></strong>
+                        <span class="comment-time"></span>
+                    </div>
+                    <div class="comment-actions">
+                        <button type="button" class="comment-menu-btn" data-comment-menu>
+                            <i data-lucide="more-horizontal"></i>
+                        </button>
+                        <div class="comment-menu-popover" hidden>
+                            <button type="button" data-edit-comment>수정</button>
+                            <button type="button" data-delete-comment>삭제</button>
+                        </div>
+                    </div>
+                </div>
+                <p class="comment-text" data-comment-text></p>
+                <form class="comment-edit-form" data-comment-edit-form hidden>
+                    <textarea name="content" rows="3"></textarea>
+                    <div class="comment-edit-actions">
+                        <button type="button" class="comment-secondary-btn" data-cancel-edit>취소</button>
+                        <button type="submit" class="comment-primary-btn">저장</button>
+                    </div>
+                </form>
+                <div class="detail-comment-footer">
+                    <button type="button" class="comment-reply-hint">답글 달기</button>
+                </div>
+            </div>
+        </article>
+    </template>
+
+    <script src="{{ url_for('static', filename='comments.js') }}"></script>
+</body>
+</html>

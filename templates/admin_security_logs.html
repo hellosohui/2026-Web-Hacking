@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meongstagram | 보안 로그</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-beige">
+    <main class="profile-layout-container">
+        <aside class="profile-sidebar">
+            <div class="sidebar-logo">
+                <a href="{{ url_for('index') }}">Meongstagram</a>
+            </div>
+            {% set sidebar_active = 'admin-security' %}
+            {% include "components/sidebar_nav.html" %}
+            <div class="sidebar-bottom">
+                <a href="{{ url_for('create_post') }}" class="btn-create-post-sidebar">게시물 만들기</a>
+            </div>
+        </aside>
+
+        <section class="profile-content-area admin-content-area">
+            <div class="admin-page-shell admin-logs-shell">
+                <header class="admin-page-header">
+                    <div>
+                        <p class="admin-page-kicker">Admin</p>
+                        <h1>보안 로그</h1>
+                        <p class="admin-page-copy">탐지된 공격, 로그인 실패, 비정상 API 호출 내역을 최신순으로 확인할 수 있습니다.</p>
+                    </div>
+                    <div class="admin-page-summary">
+                        <span>최근 로그 {{ logs|length }}건</span>
+                    </div>
+                </header>
+
+                <section class="admin-security-log-list">
+                    {% if logs %}
+                        {% for log in logs %}
+                        <article class="admin-security-log-card">
+                            <div class="admin-security-log-topline">
+                                <div class="admin-security-log-tags">
+                                    <span class="admin-security-log-type">{{ log.attack_type }}</span>
+                                    <span class="admin-security-log-status {{ 'is-blocked' if log.blocked else 'is-allowed' }}">
+                                        {{ '차단됨' if log.blocked else '허용됨' }}
+                                    </span>
+                                </div>
+                                <time class="admin-security-log-time">{{ log.occurred_at }}</time>
+                            </div>
+                            <div class="admin-security-log-grid">
+                                <div><strong>IP</strong><span>{{ log.request_ip or '-' }}</span></div>
+                                <div><strong>사용자</strong><span>{{ log.user_identifier or 'guest' }}</span></div>
+                                <div><strong>메서드</strong><span>{{ log.request_method or '-' }}</span></div>
+                                <div><strong>URL</strong><span class="admin-security-log-url">{{ log.request_url or '-' }}</span></div>
+                                <div><strong>입력값 일부</strong><span>{{ log.input_preview or '-' }}</span></div>
+                                <div><strong>사유</strong><span>{{ log.reason }}</span></div>
+                            </div>
+                        </article>
+                        {% endfor %}
+                    {% else %}
+                    <article class="admin-security-log-card admin-security-log-empty">
+                        <p>기록된 보안 로그가 없습니다.</p>
+                    </article>
+                    {% endif %}
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

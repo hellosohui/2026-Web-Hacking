@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ '우리 아이 수정하기' if mode == 'edit' else '우리 아이 등록하기' }} | Meongstagram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-beige pet-registration-page">
+    <header class="header-minimal">
+        <div class="container minimal-header-container">
+            <a href="{{ url_for('index') }}" class="minimal-logo">Meongstagram</a>
+            <a href="{{ url_for('mypage') }}" class="pet-form-back-link">
+                <i data-lucide="arrow-left"></i>
+                마이페이지
+            </a>
+        </div>
+    </header>
+
+    <main class="registration-main">
+        <section class="pet-form-shell">
+            <div class="registration-header">
+                <span class="pet-form-badge">{{ 'Edit Profile' if mode == 'edit' else 'New Profile' }}</span>
+                <h1 class="reg-title">우리 아이 등록하기</h1>
+                <p class="reg-subtitle">소중한 우리 아이의 프로필을 완성해 주세요. 등록 후 마이페이지의 함께하는 아이 카드에 바로 반영됩니다.</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="pet-form-flash-list">
+                        {% for category, message in messages %}
+                            <div class="pet-form-flash {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form
+                action="{{ url_for('edit_pet') if mode == 'edit' else url_for('register_pet') }}"
+                method="POST"
+                enctype="multipart/form-data"
+                class="registration-form"
+                id="petRegistrationForm"
+                data-default-tags='{{ personality_options | tojson }}'
+            >
+                <section class="photo-upload-section">
+                    <label for="petPhotoInput" class="photo-circle-wrapper">
+                        <img
+                            id="petPreview"
+                            src="{{ pet.pet_image_url if pet else url_for('static', filename='login_dog.png') }}"
+                            alt="Pet Preview"
+                            class="{{ 'has-image' if pet and pet.pet_image else '' }}"
+                        >
+                        <span class="upload-overlay">
+                            <i data-lucide="camera"></i>
+                            <strong>사진 업로드</strong>
+                            <small>클릭해서 이미지를 선택하세요</small>
+                        </span>
+                    </label>
+                    <button type="button" class="btn-edit-photo-float" data-trigger-file>
+                        <i data-lucide="pencil"></i>
+                    </button>
+                    <input
+                        type="file"
+                        name="image"
+                        id="petPhotoInput"
+                        class="pet-photo-input"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                    >
+                </section>
+
+                <section class="form-grid">
+                    <div class="form-item">
+                        <label for="pet_name">이름</label>
+                        <input
+                            type="text"
+                            name="pet_name"
+                            id="pet_name"
+                            value="{{ pet.pet_name if pet else '' }}"
+                            placeholder="아이의 이름을 입력해 주세요"
+                            required
+                        >
+                    </div>
+                    <div class="form-item">
+                        <label for="pet_breed">품종</label>
+                        <input
+                            type="text"
+                            name="pet_breed"
+                            id="pet_breed"
+                            value="{{ pet.pet_breed if pet else '' }}"
+                            placeholder="예: 골든 리트리버"
+                        >
+                    </div>
+                    <div class="form-item">
+                        <label for="pet_age">나이</label>
+                        <div class="input-with-unit">
+                            <input
+                                type="number"
+                                min="0"
+                                name="pet_age"
+                                id="pet_age"
+                                value="{{ pet.pet_age if pet else '' }}"
+                                placeholder="숫자만 입력"
+                            >
+                            <span class="unit">살</span>
+                        </div>
+                    </div>
+                    <div class="form-item">
+                        <label>성별</label>
+                        <div class="gender-selector" data-gender-selector>
+                            {% set selected_gender = pet.pet_gender if pet else '남아' %}
+                            <button type="button" class="gender-btn {{ 'active' if selected_gender == '남아' else '' }}" data-gender-value="남아">남아</button>
+                            <button type="button" class="gender-btn {{ 'active' if selected_gender == '여아' else '' }}" data-gender-value="여아">여아</button>
+                        </div>
+                        <input type="hidden" name="pet_gender" id="genderInput" value="{{ selected_gender }}">
+                    </div>
+                    <div class="form-item full-width">
+                        <label for="pet_feature">특징</label>
+                        <textarea
+                            name="pet_feature"
+                            id="pet_feature"
+                            rows="5"
+                            placeholder="아이만의 특별한 점을 들려주세요"
+                        >{{ pet.pet_feature if pet else '' }}</textarea>
+                    </div>
+                </section>
+
+                <section class="personality-section">
+                    <div class="personality-header">
+                        <label>성격</label>
+                        <p>여러 개를 선택할 수 있어요.</p>
+                    </div>
+                    <div class="tags-container" id="tagsContainer">
+                        {% set selected_tags = pet.personality_list if pet else [] %}
+                        {% for tag in personality_options %}
+                            <button
+                                type="button"
+                                class="tag-btn {{ 'active' if tag in selected_tags else '' }}"
+                                data-tag-value="{{ tag }}"
+                            >{{ tag }}</button>
+                        {% endfor %}
+                        {% for tag in selected_tags %}
+                            {% if tag not in personality_options %}
+                                <button type="button" class="tag-btn active custom-tag" data-tag-value="{{ tag }}">{{ tag }}</button>
+                            {% endif %}
+                        {% endfor %}
+                        <button type="button" class="btn-add-tag" id="addCustomTagBtn">
+                            <i data-lucide="plus"></i>
+                            추가
+                        </button>
+                    </div>
+                    <input type="hidden" name="pet_personality" id="personalityInput" value="{{ pet.pet_personality if pet else '' }}">
+                </section>
+
+                <button type="submit" class="btn-register-submit">{{ '수정 완료' if mode == 'edit' else '등록 완료' }}</button>
+            </form>
+        </section>
+
+        <footer class="reg-footer">
+            <div class="footer-icons">
+                <i data-lucide="flower-2"></i>
+                <span class="dot-line"></span>
+                <i data-lucide="paw-print"></i>
+                <span class="dot-line"></span>
+                <i data-lucide="flower-2"></i>
+            </div>
+        </footer>
+    </main>
+
+    <script src="{{ url_for('static', filename='pet_form.js') }}"></script>
+</body>
+</html>

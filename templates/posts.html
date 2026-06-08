@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meongstagram | Community Feed</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="feed-body {{ 'guest-feed-page' if is_guest else '' }}" data-guest-user="{{ '1' if is_guest else '0' }}" data-open-auth-modal="{{ '1' if open_guest_modal else '0' }}">
+    <div class="guest-feed-shell">
+    <header class="header feed-header">
+        <div class="container header-container">
+            <div class="logo">
+                <a href="{{ url_for('index') }}" class="logo-text" style="text-decoration: none;">Meongstagram</a>
+            </div>
+            <div class="header-search">
+                <i data-lucide="search"></i>
+                <input type="text" placeholder="친구 또는 해시태그 검색">
+            </div>
+            <div class="header-actions">
+                <a href="{{ url_for('create_post') }}" class="btn-write-top {% if is_guest %}guest-auth-trigger{% endif %}" {% if is_guest %}data-auth-required="write"{% endif %}>
+                    <i data-lucide="plus"></i> 글쓰기
+                </a>
+                <a href="{{ url_for('notifications_page') }}" class="icon-btn icon-btn-link notification-icon-link {% if is_guest %}guest-auth-trigger{% endif %}" {% if is_guest %}data-auth-required="notification"{% endif %}>
+                    <span class="notification-icon-wrap">
+                        <i data-lucide="bell"></i>
+                        {% if unread_notification_count > 0 %}
+                        <span class="notification-dot-badge"></span>
+                        {% endif %}
+                    </span>
+                </a>
+                <a href="{{ url_for('messages_page') }}" class="icon-btn icon-btn-link {% if is_guest %}guest-auth-trigger{% endif %}" {% if is_guest %}data-auth-required="message"{% endif %}><i data-lucide="mail"></i></a>
+                <div class="user-profile">
+                    <a href="{{ url_for('mypage') }}" class="{% if is_guest %}guest-auth-trigger{% endif %}" {% if is_guest %}data-auth-required="mypage"{% endif %}>
+                        <img src="{{ current_user.profile_image_url if current_user else 'https://api.dicebear.com/7.x/avataaars/svg?seed=User' }}" alt="User">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="feed-main">
+        <div class="container feed-container">
+            <aside class="feed-left">
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">트렌딩 해시태그</h3>
+                    <div class="tag-cloud">
+                        {% for tag in trending_tags %}
+                            <span class="tag-item">#{{ tag }}</span>
+                        {% else %}
+                            <p style="color: #999; font-size: 13px;">아직 작성된 해시태그가 없습니다.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </aside>
+
+            <section class="feed-center">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}" style="margin-bottom: 20px;">{{ message }}</div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                <div class="feed-list">
+                    {% for post in posts %}
+                    <article class="feed-post" data-post-card>
+                        <div class="post-header">
+                            <a href="{{ post.author_profile_url }}" style="text-decoration: none;">
+                                <img src="{{ post.author_avatar }}" alt="User" class="post-user-img">
+                            </a>
+                            <div class="post-user-info">
+                                <a href="{{ post.author_profile_url }}" style="text-decoration: none; color: inherit;">
+                                    <span class="post-user-name">{{ post.author_name }}</span>
+                                </a>
+                                <span class="post-meta">
+                                    {{ post.author_handle }}{% if post.location %} • 📍 {{ post.location }}{% endif %} •
+                                    {{ post.display_time }}
+                                </span>
+                            </div>
+                            {% if session.get('user_id') == post.user_id %}
+                            <div class="post-owner-actions">
+                                <a href="{{ url_for('edit_post', post_id=post.id) }}"><i data-lucide="edit-3"></i></a>
+                                <a href="{{ url_for('delete_post', post_id=post.id) }}" onclick="return confirm('정말 삭제하시겠습니까?')"><i data-lucide="trash-2"></i></a>
+                            </div>
+                            {% elif session.get('role') == 'admin' %}
+                            <div class="post-owner-actions">
+                                <a href="{{ url_for('delete_post', post_id=post.id) }}" onclick="return confirm('정말 삭제하시겠습니까?')"><i data-lucide="trash-2"></i></a>
+                            </div>
+                            {% else %}
+                            <button class="post-more"><i data-lucide="more-horizontal"></i></button>
+                            {% endif %}
+                        </div>
+
+                        {% if post.image_url %}
+                        <div class="post-image-container">
+                            <img src="{{ post.display_image }}" alt="Post Image" class="post-main-img">
+                        </div>
+                        {% endif %}
+
+                        <div class="post-actions-row">
+                            <div class="left-actions">
+                                <button
+                                    class="action-btn like-toggle-btn {{ 'liked' if post.is_liked else '' }}"
+                                    data-like-button
+                                    data-post-id="{{ post.id }}"
+                                    {% if is_guest %}data-auth-required="like"{% endif %}
+                                >
+                                    <i data-lucide="heart"></i>
+                                    <span data-like-count>{{ post.like_count }}</span>
+                                </button>
+                                <a class="action-btn comment-count-btn {% if is_guest %}guest-auth-trigger{% endif %}" href="{{ url_for('post_comments', post_id=post.id) }}" {% if is_guest %}data-auth-required="comment"{% endif %}>
+                                    <i data-lucide="message-circle"></i>
+                                    <span>{{ post.comment_count }}</span>
+                                </a>
+                                <button class="action-btn {% if is_guest %}guest-auth-trigger{% endif %}" type="button" {% if is_guest %}data-auth-required="message"{% endif %}><i data-lucide="send"></i></button>
+                                {% if post.image_url %}
+                                <a class="action-btn" href="{{ url_for('download_post_image', post_id=post.id) }}">
+                                    <i data-lucide="download"></i>
+                                    <span>사진 다운로드</span>
+                                </a>
+                                {% endif %}
+                            </div>
+                            <button class="action-btn {% if is_guest %}guest-auth-trigger{% endif %}" type="button" {% if is_guest %}data-auth-required="save"{% endif %}><i data-lucide="bookmark"></i></button>
+                        </div>
+
+                        <div class="post-content">
+                            <p><strong>{{ post.author_name }}</strong> <span class="inline-user-handle">{{ post.author_handle }}</span> {{ post.content }}</p>
+                            {% if post.hashtags %}
+                            <p class="post-tags" style="color: #E67E22; font-weight: 700; margin-top: 5px;">{{ post.hashtags }}</p>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% else %}
+                    <div class="feed-empty-state">
+                        아직 등록된 게시물이 없습니다. 첫 번째 커뮤니티 글을 작성해 보세요.
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <aside class="feed-right">
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">추천 친구</h3>
+                    <div class="user-suggestion-list">
+                        {% for user in suggested_users %}
+                            {% if user.id != session.get('user_id') %}
+                            <div class="user-suggestion" style="margin-bottom: 12px;">
+                                <a href="{{ user.profile_url }}">
+                                    <img src="{{ user.profile_image_url }}" alt="User">
+                                </a>
+                                <div class="sug-info">
+                                    <a href="{{ user.profile_url }}" style="text-decoration: none; color: inherit;">
+                                        <span class="sug-name">{{ user.name }}</span>
+                                    </a>
+                                    <span class="sug-meta">{{ user.display_handle }}</span>
+                                </div>
+                                <div class="suggestion-actions">
+                                    <a href="{{ url_for('start_conversation', user_id=user.id) }}" class="suggestion-message-btn {% if is_guest %}guest-auth-trigger{% endif %}" aria-label="메시지 보내기" {% if is_guest %}data-auth-required="message"{% endif %}>
+                                        <i data-lucide="mail"></i>
+                                    </a>
+                                    <button class="follow-btn {% if is_guest %}guest-auth-trigger{% endif %}" onclick="toggleFollow({{ user.id }})" {% if is_guest %}data-auth-required="follow"{% endif %}>팔로우</button>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <p style="color: #999; font-size: 13px;">추천할 친구가 없습니다.</p>
+                        {% endfor %}
+                    </div>
+                    {% if suggested_users|length > 0 %}
+                        <button class="btn-all-view">전체 보기</button>
+                    {% endif %}
+                </div>
+
+                <footer class="sidebar-footer">
+                    <div class="footer-links">
+                        <a href="#">정보</a>
+                        <a href="#">도움말</a>
+                        <a href="#">개인정보처리방침</a>
+                        <a href="#">약관</a>
+                        <a href="#">위치</a>
+                    </div>
+                    <p class="copyright">© 2024 Meongstagram</p>
+                </footer>
+            </aside>
+        </div>
+
+        <a href="{{ url_for('create_post') }}" class="fab-write {% if is_guest %}guest-auth-trigger{% endif %}" {% if is_guest %}data-auth-required="write"{% endif %}>
+            <i data-lucide="plus"></i> 글쓰기
+        </a>
+    </main>
+    </div>
+
+    {% if is_guest %}
+    <div class="guest-auth-modal-layer" id="guestAuthModalLayer" aria-hidden="true">
+        <div class="guest-auth-modal-overlay" data-close-guest-modal></div>
+        <div class="guest-auth-modal-card" role="dialog" aria-modal="true" aria-labelledby="guestAuthTitle">
+            <button type="button" class="guest-auth-close" data-close-guest-modal aria-label="닫기">
+                <i data-lucide="x"></i>
+            </button>
+            <div class="guest-auth-icon">
+                <i data-lucide="paw-print"></i>
+            </div>
+            <h2 id="guestAuthTitle">회원가입 후 이용 가능해요</h2>
+            <p>지금 가입해서 다른 반려인들과 소통하고, 좋아요와 댓글, 팔로우 기능까지 모두 이용해 보세요.</p>
+            <div class="guest-auth-actions">
+                <a href="{{ url_for('signup') }}" class="guest-auth-primary">회원가입</a>
+                <a href="{{ url_for('login') }}" class="guest-auth-secondary">로그인</a>
+                <button type="button" class="guest-auth-tertiary" data-close-guest-modal>둘러보기 계속하기</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script src="{{ url_for('static', filename='post_interactions.js') }}"></script>
+    <script>
+        lucide.createIcons();
+        function toggleFollow(userId) {
+            if (document.body.dataset.guestUser === '1' && window.openGuestAuthModal) {
+                window.openGuestAuthModal();
+                return;
+            }
+            fetch(`/follow/${userId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

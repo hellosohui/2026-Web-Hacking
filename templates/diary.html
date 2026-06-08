@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 반려견 다이어리 | Meongstagram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="diary-body">
+    <main class="profile-layout-container diary-layout-container">
+        <aside class="profile-sidebar diary-sidebar">
+            <div class="sidebar-logo">
+                <a href="{{ url_for('index') }}">Meongstagram</a>
+            </div>
+            {% set sidebar_active = 'diary' %}
+            {% include "components/sidebar_nav.html" %}
+            <div class="diary-sidebar-profile">
+                <div class="diary-sidebar-avatar">
+                    <img src="{{ pet.pet_image_url if pet else user.profile_image_url }}" alt="{{ dog_name }}">
+                </div>
+                <h2>{{ dog_name }}</h2>
+                <p>
+                    {% if pet %}
+                    {{ pet.pet_breed or '우리 집 강아지' }}{% if pet.pet_age %} · {{ pet.pet_age }}살{% endif %}
+                    {% else %}
+                    {{ user.name }}님만의 기록 공간
+                    {% endif %}
+                </p>
+            </div>
+            <div class="sidebar-bottom diary-sidebar-bottom">
+                <a href="{{ url_for('diary_new') }}" class="btn-create-post-sidebar diary-create-btn">오늘 기록하기</a>
+                <a href="{{ url_for('logout') }}" class="diary-logout-link">
+                    <i data-lucide="log-out"></i> 로그아웃
+                </a>
+            </div>
+        </aside>
+
+        <section class="profile-content-area diary-content-area">
+            <header class="diary-topbar">
+                <div>
+                    <h1>나만의 반려견 다이어리</h1>
+                    <p>매일매일 기록하는 성장 일기와 건강 체크리스트</p>
+                </div>
+                <div class="diary-topbar-actions">
+                    <a href="{{ url_for('diary_new') }}" class="diary-primary-btn">
+                        <i data-lucide="square-pen"></i> Log Daily Entry
+                    </a>
+                </div>
+            </header>
+
+            {% with flashes = get_flashed_messages(with_categories=true) %}
+                {% if flashes %}
+                    <div class="diary-flash-stack">
+                        {% for category, message in flashes %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="diary-dashboard-grid">
+                <section class="diary-card diary-metric-card">
+                    <div class="diary-card-icon mood">
+                        <i data-lucide="smile"></i>
+                    </div>
+                    <span class="diary-card-chip">Today Mood</span>
+                    <p class="diary-card-label">오늘의 기분</p>
+                    <strong>{{ latest_entry.mood if latest_entry and latest_entry.mood else '기록 없음' }}</strong>
+                </section>
+
+                <section class="diary-card diary-metric-card accent">
+                    <div class="diary-card-icon weight">
+                        <i data-lucide="scale"></i>
+                    </div>
+                    <span class="diary-card-chip">Latest Weight</span>
+                    <p class="diary-card-label">현재 몸무게</p>
+                    <strong>
+                        {% if latest_entry and latest_entry.weight is not none %}
+                        {{ '%.1f'|format(latest_entry.weight) }} kg
+                        {% else %}
+                        미기록
+                        {% endif %}
+                    </strong>
+                </section>
+
+                <section class="diary-card diary-checklist-card">
+                    <div class="diary-card-head">
+                        <h2>데일리 건강 체크리스트</h2>
+                        <span>{{ checklist_percent }}% 완료</span>
+                    </div>
+                    <div class="diary-checklist-list">
+                        {% for item in checklist_items %}
+                        <div class="diary-check-item {{ 'checked' if item.checked else '' }}">
+                            <div class="diary-check-item-icon">
+                                <i data-lucide="{{ item.icon }}"></i>
+                            </div>
+                            <div class="diary-check-item-copy">
+                                <strong>{{ item.label }}</strong>
+                                <p>{{ item.description }}</p>
+                            </div>
+                            <div class="diary-check-item-state">
+                                <i data-lucide="{{ 'check-circle-2' if item.checked else 'circle' }}"></i>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <div class="diary-main-grid">
+                <section class="diary-feed-column">
+                    {% if diary_entries %}
+                        {% for entry in diary_entries %}
+                        <article class="diary-feed-card">
+                            <div class="diary-feed-date">
+                                <span class="day">{{ entry.date_parts.day }}</span>
+                                <span class="month">{{ entry.date_parts.month }}</span>
+                            </div>
+                            <div class="diary-feed-body">
+                                {% if entry.image_url %}
+                                <img src="{{ entry.image_url }}" alt="{{ entry.title }}" class="diary-feed-image">
+                                {% endif %}
+                                <div class="diary-feed-meta">
+                                    {% if entry.mood %}
+                                    <span class="diary-tag mood">{{ entry.mood }}</span>
+                                    {% endif %}
+                                    {% if entry.walk_type %}
+                                    <span class="diary-tag">{{ entry.walk_type }}</span>
+                                    {% endif %}
+                                    <span class="diary-feed-time">{{ entry.display_time }}</span>
+                                </div>
+                                <div class="diary-feed-copy">
+                                    <h3>{{ entry.title }}</h3>
+                                    <p>{{ entry.content }}</p>
+                                </div>
+                                <div class="diary-feed-footer">
+                                    <div class="diary-feed-stats">
+                                        {% if entry.weight is not none %}
+                                        <span><i data-lucide="scale"></i> {{ '%.1f'|format(entry.weight) }}kg</span>
+                                        {% endif %}
+                                        {% if entry.dog_name %}
+                                        <span><i data-lucide="paw-print"></i> {{ entry.dog_name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="diary-feed-actions">
+                                        <a href="{{ url_for('diary_edit', entry_id=entry.id) }}" class="diary-inline-btn">수정</a>
+                                        <form action="{{ url_for('diary_delete', entry_id=entry.id) }}" method="POST" onsubmit="return confirm('이 기록을 삭제할까요?');">
+                                            <button type="submit" class="diary-inline-btn danger">삭제</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+                        {% endfor %}
+                    {% else %}
+                    <div class="diary-empty-state">
+                        <h2>아직 다이어리 기록이 없습니다.</h2>
+                        <p>오늘의 기분과 건강 체크를 첫 번째 기록으로 남겨보세요.</p>
+                        <a href="{{ url_for('diary_new') }}" class="diary-primary-btn">첫 기록 작성하기</a>
+                    </div>
+                    {% endif %}
+                </section>
+
+                <aside class="diary-side-column">
+                    <section class="diary-card diary-streak-card">
+                        <div class="diary-card-head">
+                            <h2>{{ current_month_label }} 기록 스트릭</h2>
+                            <span>{{ streak_summary.month_entry_count }}일 기록</span>
+                        </div>
+                        <div class="diary-calendar-head">
+                            <span>SUN</span>
+                            <span>MON</span>
+                            <span>TUE</span>
+                            <span>WED</span>
+                            <span>THU</span>
+                            <span>FRI</span>
+                            <span>SAT</span>
+                        </div>
+                        <div class="diary-calendar-grid">
+                            {% for day in calendar_days %}
+                            <span class="diary-calendar-day {{ 'active' if day in streak_summary.month_dates else '' }}">{{ day }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="diary-streak-highlight">
+                            <div class="diary-card-icon streak">
+                                <i data-lucide="flame"></i>
+                            </div>
+                            <div>
+                                <p>현재 스트릭</p>
+                                <strong>{{ streak_summary.current_streak }}일 연속 기록 중!</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="diary-card diary-summary-card">
+                        <div class="diary-card-head">
+                            <h2>오늘의 요약</h2>
+                        </div>
+                        <dl class="diary-summary-list">
+                            <div>
+                                <dt>최신 제목</dt>
+                                <dd>{{ latest_entry.title if latest_entry else '아직 기록 없음' }}</dd>
+                            </div>
+                            <div>
+                                <dt>산책 유형</dt>
+                                <dd>{{ latest_entry.walk_type if latest_entry and latest_entry.walk_type else '미입력' }}</dd>
+                            </div>
+                            <div>
+                                <dt>오늘 체크</dt>
+                                <dd>{{ checklist_completed }}/{{ checklist_items|length }} 완료</dd>
+                            </div>
+                            <div>
+                                <dt>총 기록 수</dt>
+                                <dd>{{ diary_entries|length }}개</dd>
+                            </div>
+                        </dl>
+                    </section>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

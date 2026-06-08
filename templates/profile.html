@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.name }}님의 프로필 | Meongstagram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-beige">
+    <main class="profile-layout-container">
+        <!-- Sidebar -->
+        <aside class="profile-sidebar">
+            <div class="sidebar-logo">
+                <a href="{{ url_for('index') }}">Meongstagram</a>
+            </div>
+            {% set sidebar_active = 'mypage' %}
+            {% include "components/sidebar_nav.html" %}
+            <div class="sidebar-bottom">
+                <a href="{{ url_for('create_post') }}" class="btn-create-post-sidebar">게시물 만들기</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <section class="profile-content-area">
+            <header class="profile-top-header">
+                <div></div>
+                <div class="top-header-icons">
+                    <a href="{{ url_for('notifications_page') }}" class="icon-btn-link top-header-icon-link notification-icon-link">
+                        <span class="notification-icon-wrap">
+                            <i data-lucide="bell"></i>
+                            {% if unread_notification_count > 0 %}
+                            <span class="notification-dot-badge"></span>
+                            {% endif %}
+                        </span>
+                    </a>
+                    <i data-lucide="settings"></i>
+                </div>
+            </header>
+
+            <div class="profile-main-wrapper">
+                <!-- Profile Header Section -->
+                <div class="profile-card-header">
+                <div class="profile-image-container">
+                    <img src="{{ user.profile_image_url }}" alt="Profile" class="profile-main-img">
+                </div>
+                <div class="profile-info-main">
+                    <div class="profile-name-row">
+                        <h1 class="profile-display-name">{{ user.name }}</h1>
+                        {% if session.get('user_id') == user.id %}
+                        <a href="{{ url_for('edit_profile') }}" class="btn-edit-profile">프로필 편집</a>
+                        <a href="{{ url_for('account_settings') }}" class="btn-settings-icon" aria-label="계정 설정">
+                            <i data-lucide="settings"></i>
+                        </a>
+                        {% else %}
+                        <div class="profile-action-group">
+                            <a href="{{ url_for('start_conversation', user_id=user.id) }}" class="btn-message-profile">
+                                <i data-lucide="mail"></i> 메시지
+                            </a>
+                            <button class="btn-follow-toggle {{ 'following' if is_following else '' }}" onclick="toggleFollow({{ user.id }})">
+                                {{ '언팔로우' if is_following else '팔로우' }}
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="profile-display-handle">{{ user.display_handle }}</div>
+                    
+                    <div class="profile-stats-row">
+                        <div class="stat-item"><strong>{{ posts|length }}</strong> 게시물</div>
+                        <div class="stat-item"><strong>{{ follower_count }}</strong> 팔로워</div>
+                        <div class="stat-item"><strong>{{ following_count }}</strong> 팔로잉</div>
+                    </div>
+
+                    <div class="profile-bio-text">
+                        {{ user.bio or '반려견과 함께하는 소중한 일상을 공유해보세요. 🐾' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pet Section ("함께하는 아이") -->
+            <div class="pet-section-title">
+                <i data-lucide="paw-print"></i> 함께하는 아이
+            </div>
+
+            {% if pet %}
+            <div class="pet-info-card">
+                <div class="pet-card-left">
+                    <img src="{{ pet.pet_image_url }}" alt="Pet" class="pet-card-img">
+                </div>
+                <div class="pet-card-center">
+                    <div class="pet-name-header">
+                        <h3 class="pet-display-name">{{ pet.pet_name }}</h3>
+                        {% if pet.pet_breed %}
+                        <span class="pet-breed-tag">{{ pet.pet_breed }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="pet-stats-mini">
+                        {% if pet.pet_age %}
+                        <div class="pet-stat"><i data-lucide="cake"></i> 나이: {{ pet.pet_age }}살</div>
+                        {% endif %}
+                        <div class="pet-stat"><i data-lucide="venus-mars"></i> 성별: {{ pet.pet_gender }}</div>
+                    </div>
+                </div>
+                <div class="pet-card-right">
+                    <div class="pet-personality-tags">
+                        {% if pet.personality_list %}
+                            {% for tag in pet.personality_list %}
+                            <span class="personality-tag">{{ tag.strip() }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="personality-tag">성격 태그를 등록해 보세요</span>
+                        {% endif %}
+                    </div>
+                    <p class="pet-desc-bubble">"{{ pet.pet_feature or '우리 아이만의 특징을 등록해 보세요.' }}"</p>
+                </div>
+                {% if session.get('user_id') == user.id %}
+                <a href="{{ url_for('edit_pet') }}" class="pet-edit-btn-float"><i data-lucide="edit-3"></i></a>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="pet-empty-state">
+                <p>아직 등록된 반려견 정보가 없습니다.</p>
+                {% if session.get('user_id') == user.id %}
+                <a href="{{ url_for('register_pet') }}" class="btn-register-pet">반려견 등록하기</a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Tabs Section -->
+            <div class="profile-tabs">
+                <button class="tab-item active"><i data-lucide="grid"></i> 내 게시물</button>
+                <button class="tab-item"><i data-lucide="user-square"></i> 태그된 게시물</button>
+                <button class="tab-item"><i data-lucide="bookmark"></i> 저장됨</button>
+            </div>
+
+            <!-- Posts Grid -->
+            <div class="profile-posts-grid">
+                {% for post in posts %}
+                <a href="{{ url_for('post_comments', post_id=post.id) }}" class="profile-post-item" aria-label="게시물 상세 보기">
+                    <img src="{{ post.image_url or url_for('static', filename='post_placeholder.png') }}" alt="Post">
+                    <div class="post-overlay">
+                        <span><i data-lucide="expand"></i> 상세 보기</span>
+                    </div>
+                </a>
+                {% else %}
+                <div class="empty-posts-message">
+                    아직 게시물이 없습니다.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        function toggleFollow(userId) {
+            fetch(`/follow/${userId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

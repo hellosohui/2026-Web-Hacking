@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meongstagram | Create New Post</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="post-create-bg">
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo">
+                <a href="{{ url_for('index') }}" class="logo-text" style="text-decoration: none;">Meongstagram</a>
+            </div>
+            <nav class="nav">
+                <a href="{{ url_for('posts') }}" class="nav-link">Feed</a>
+                <a href="#" class="nav-link">Walking</a>
+                <a href="#" class="nav-link">AI Analysis</a>
+                <a href="{{ url_for('mypage') }}" class="nav-link">My Page</a>
+            </nav>
+            <div class="header-actions">
+                <button class="btn btn-primary btn-post-top">Post</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="post-create-main">
+        <div class="container post-create-container">
+            <div class="post-create-header">
+                <a href="{{ url_for('posts') }}" class="close-btn"><i data-lucide="x"></i></a>
+                <h1 class="post-create-title">새 게시물 만들기</h1>
+            </div>
+
+            <div class="post-create-card">
+                <div class="post-create-left" onclick="document.getElementById('fileInput').click()" style="cursor: pointer; position: relative;">
+                    <div class="upload-placeholder" id="placeholderContent">
+                        <div class="upload-icon-circle">
+                            <i data-lucide="camera"></i>
+                        </div>
+                        <h3>우리 아이 사진 선택</h3>
+                        <p>최대 10장의 사진이나 동영상을 업로드하세요</p>
+                    </div>
+                    <img id="imagePreview" src="" alt="Preview" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
+                </div>
+
+                <div class="post-create-right">
+                    <div class="user-row">
+                        <div class="user-avatar-small">
+                            <a href="{{ url_for('mypage') }}">
+                                <img src="{{ post_creator.profile_image_url if post_creator else (current_user.profile_image_url if current_user else 'https://api.dicebear.com/7.x/avataaars/svg?seed=User') }}" alt="User">
+                            </a>
+                        </div>
+                        <div class="user-info-text">
+                            <span class="user-name">{{ post_creator.name if post_creator else session.get('user_name', 'mung_buddy_24') }}</span>
+                            <span class="user-sub">Sharing a new memory</span>
+                        </div>
+                        <div class="user-badge-info">
+                            <i data-lucide="info"></i>
+                        </div>
+                    </div>
+
+                    <form action="{{ url_for('create_post') }}" method="POST" enctype="multipart/form-data">
+                        <input type="file" name="image" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" onchange="previewImage(this)">
+                        <input type="hidden" name="location" id="locationInput">
+                        <input type="hidden" name="hashtags" id="hashtagsInput">
+                        
+                        <textarea name="content" class="post-textarea" placeholder="우리 아이의 소중한 순간에 대해 적어주세요..." required></textarea>
+                        
+                        <div class="option-list">
+                            <div class="option-item" onclick="setLocation()">
+                                <div class="option-label">
+                                    <i data-lucide="map-pin"></i>
+                                    <span id="locationText">Location</span>
+                                </div>
+                                <i data-lucide="chevron-right"></i>
+                            </div>
+                            <div class="option-item" onclick="setHashtags()">
+                                <div class="option-label">
+                                    <i data-lucide="hash"></i>
+                                    <span id="hashtagsText">Hashtags</span>
+                                </div>
+                                <i data-lucide="chevron-right"></i>
+                            </div>
+                            <div class="option-item">
+                                <div class="option-label">
+                                    <i data-lucide="settings"></i>
+                                    <span>Advanced Settings</span>
+                                </div>
+                                <i data-lucide="chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-share-large">공유하기</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="post-create-bottom">
+                <div class="tip-card">
+                    <div class="tip-icon">
+                        <i data-lucide="lightbulb"></i>
+                    </div>
+                    <div class="tip-content">
+                        <h4>Writing Tip</h4>
+                        <p>Describe the mood of the walk to get more engagement!</p>
+                    </div>
+                </div>
+
+                <div class="recent-places">
+                    <h4>최근 방문한 장소</h4>
+                    <div class="place-tags">
+                        {% if recent_places %}
+                            {% for place in recent_places %}
+                            <span class="place-tag">{{ place }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="place-tag">최근 방문한 장소가 없습니다.</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Walk Record Modal (Enhanced) -->
+    <div id="walkModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content walk-modal">
+            <div class="modal-header">
+                <button class="modal-back-btn" onclick="closeWalkModal()">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <h2 class="modal-title">내 산책 기록</h2>
+                    <div class="header-right-icons">
+                        <a href="{{ url_for('notifications_page') }}" class="icon-btn-link walk-header-icon-link notification-icon-link">
+                            <span class="notification-icon-wrap">
+                                <i data-lucide="bell"></i>
+                                {% if unread_notification_count > 0 %}
+                            <span class="notification-dot-badge"></span>
+                            {% endif %}
+                            </span>
+                        </a>
+                        <div class="user-avatar-mini">
+                            <img src="{{ post_creator.profile_image_url if post_creator else (current_user.profile_image_url if current_user else 'https://api.dicebear.com/7.x/avataaars/svg?seed=User') }}" alt="User">
+                        </div>
+                    </div>
+                </div>
+            
+            <p class="walk-subtitle">지도를 클릭하여 산책 위치를 선택하고 기록을 수정해보세요!</p>
+
+            <div class="walk-container">
+                <!-- Left: Map Area -->
+                <div class="walk-left">
+                    <div id="map" class="map-box" style="height: 500px; border-radius: 30px;">
+                        <!-- Map will be rendered here -->
+                        <div style="padding: 20px; color: #888; text-align: center; margin-top: 200px;">
+                            OpenStreetMap Loading...
+                        </div>
+                    </div>
+                    <div class="map-coordinates" style="margin-top: 10px; font-size: 12px; color: #aaa;">
+                        선택된 좌표: <span id="displayCoords">없음</span>
+                    </div>
+                </div>
+
+                <!-- Right: Stats & Info -->
+                <div class="walk-right">
+                    <div class="pet-profile-card">
+                        <div class="pet-img-wrapper">
+                            <img src="{{ pet.pet_image_url if pet else 'https://api.dicebear.com/7.x/avataaars/svg?seed=pet' }}" alt="Pet">
+                            <div class="pet-badge"><i data-lucide="paw-print"></i></div>
+                        </div>
+                        <h3 class="pet-name">{{ pet.pet_name if pet else '우리 아이를 등록해 보세요' }}</h3>
+                        <p class="pet-info">
+                            {% if pet %}
+                                {{ pet.pet_breed or '품종 미등록' }}{% if pet.pet_age %} • {{ pet.pet_age }}살{% endif %}
+                            {% else %}
+                                마이페이지에서 반려견 정보를 등록하면 여기에 표시됩니다.
+                            {% endif %}
+                        </p>
+                        
+                        <div class="walk-stats">
+                            <div class="stat-item">
+                                <i data-lucide="route"></i>
+                                <div class="stat-info">
+                                    <input type="text" id="editDistance" value="2.4" class="stat-input">
+                                    <span class="stat-unit">km 이동</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <i data-lucide="timer"></i>
+                                <div class="stat-info">
+                                    <input type="text" id="editDuration" value="15" class="stat-input">
+                                    <span class="stat-unit">분 산책</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="memo-section">
+                        <div class="memo-header">
+                            <label>장소 명칭 / 주소</label>
+                        </div>
+                        <input type="text" id="modalLocationName" class="modal-address-input" placeholder="지도 클릭 시 자동 입력되거나 직접 입력" value="시바 공원">
+                        
+                        <div class="memo-header" style="margin-top: 15px;">
+                            <label>산책 메모</label>
+                        </div>
+                        <textarea id="modalMemo" class="modal-memo-input" placeholder="오늘 산책은 어땠나요?">하늘이가 오늘 동네 공원을 아주 좋아했어요!</textarea>
+                    </div>
+
+                    <div class="time-section">
+                        <span class="time-label">산책 완료 시간</span>
+                        <input type="time" id="modalTime" class="modal-time-input" value="15:30">
+                    </div>
+
+                    <button class="btn-walk-submit" onclick="applyWalkRecord()">
+                        <i data-lucide="check"></i> 위치 및 기록 적용하기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        let map;
+        let marker;
+        let selectedCoords = { lat: 37.5665, lng: 126.9780 }; // Default Seoul
+
+        function initializeMap() {
+            if (map) {
+                return;
+            }
+
+            console.log("Initializing Leaflet map...");
+            map = L.map('map', {
+                zoomControl: true,
+                attributionControl: true
+            });
+            map.setView([selectedCoords.lat, selectedCoords.lng], 15);
+
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            marker = L.marker([selectedCoords.lat, selectedCoords.lng], {
+                draggable: true
+            }).addTo(map);
+
+            renderSelectedCoords();
+
+            map.on('click', (event) => {
+                updateMarker(event.latlng);
+                console.log(`Map clicked: Lat ${event.latlng.lat}, Lng ${event.latlng.lng}`);
+            });
+
+            marker.on('dragend', () => {
+                updateMarker(marker.getLatLng());
+            });
+        }
+
+        function updateMarker(latLng) {
+            if (!marker) {
+                return;
+            }
+
+            marker.setLatLng(latLng);
+            selectedCoords = { lat: latLng.lat, lng: latLng.lng };
+            renderSelectedCoords();
+        }
+
+        function renderSelectedCoords() {
+            document.getElementById('displayCoords').innerText = `${selectedCoords.lat.toFixed(4)}, ${selectedCoords.lng.toFixed(4)}`;
+        }
+
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            const placeholder = document.getElementById('placeholderContent');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function setLocation() {
+            openWalkModal();
+        }
+
+        function openWalkModal() {
+            document.getElementById('walkModal').style.display = 'flex';
+            initializeMap();
+            window.setTimeout(() => {
+                map.invalidateSize();
+                map.setView([selectedCoords.lat, selectedCoords.lng], map.getZoom(), { animate: false });
+                marker.setLatLng([selectedCoords.lat, selectedCoords.lng]);
+            }, 0);
+            lucide.createIcons();
+        }
+
+        function closeWalkModal() {
+            document.getElementById('walkModal').style.display = 'none';
+        }
+
+        function applyWalkRecord() {
+            const locationName = document.getElementById('modalLocationName').value;
+            const distance = document.getElementById('editDistance').value;
+            const duration = document.getElementById('editDuration').value;
+            const time = document.getElementById('modalTime').value;
+            const memo = document.getElementById('modalMemo').value;
+
+            // UI 업데이트
+            document.getElementById('locationText').innerText = locationName || "위치 선택됨";
+            document.getElementById('locationText').style.color = "#E67E22";
+            document.getElementById('locationInput').value = locationName;
+
+            // Hidden 폼 데이터 추가/업데이트
+            const form = document.querySelector('.post-create-right form');
+            addHiddenInput(form, 'latitude', selectedCoords.lat);
+            addHiddenInput(form, 'longitude', selectedCoords.lng);
+            addHiddenInput(form, 'walk_lat', selectedCoords.lat);
+            addHiddenInput(form, 'walk_lng', selectedCoords.lng);
+            addHiddenInput(form, 'walk_distance', distance);
+            addHiddenInput(form, 'walk_duration', duration);
+            addHiddenInput(form, 'walk_completed_time', time);
+            addHiddenInput(form, 'walk_memo', memo);
+
+            console.log('Applied Walk Record:', {
+                locationName, distance, duration, time, memo, selectedCoords
+            });
+            
+            closeWalkModal();
+        }
+
+        function addHiddenInput(form, name, value) {
+            let input = form.querySelector(`input[name="${name}"]`);
+            if (!input) {
+                input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                form.appendChild(input);
+            }
+            input.value = value;
+        }
+
+        function setHashtags() {
+            const tags = prompt("해시태그를 입력해 주세요 (예: #산책 #강아지):", "");
+            if (tags !== null) {
+                document.getElementById('hashtagsInput').value = tags;
+                document.getElementById('hashtagsText').innerText = tags || "Hashtags";
+                document.getElementById('hashtagsText').style.color = tags ? "#E67E22" : "inherit";
+            }
+        }
+    </script>
+</body>
+</html>

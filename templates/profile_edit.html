@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프로필 편집 | Meongstagram</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="profile-edit-body">
+    <header class="profile-edit-topbar">
+        <div class="profile-edit-topbar-inner">
+            <a href="{{ url_for('index') }}" class="profile-edit-logo">Meongstagram</a>
+            <div class="profile-edit-topbar-actions">
+                <a href="{{ url_for('account_settings') }}" class="profile-edit-icon-btn" aria-label="계정 설정"><i data-lucide="settings"></i></a>
+                <a href="{{ url_for('mypage') }}" class="profile-edit-user-chip">
+                    <img src="{{ user.profile_image_url }}" alt="User">
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="profile-edit-main">
+        <section class="profile-edit-hero">
+            <h1>프로필 편집</h1>
+            <p>프로필 사진과 공개 프로필 정보를 수정할 수 있습니다.</p>
+        </section>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="profile-edit-flash-list">
+                    {% for category, message in messages %}
+                        <div class="profile-edit-flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('edit_profile') }}" method="POST" enctype="multipart/form-data" class="profile-edit-form-shell">
+            <section class="profile-edit-card">
+                <div class="profile-edit-card-header">
+                    <span class="profile-edit-card-icon"><i data-lucide="user"></i></span>
+                    <h2>내 프로필</h2>
+                </div>
+
+                <div class="profile-edit-profile-grid">
+                    <div class="profile-edit-avatar-panel">
+                        <label for="profileImageInput" class="profile-edit-avatar-wrap">
+                            <img
+                                id="profileImagePreview"
+                                src="{{ user.profile_image_url }}"
+                                alt="프로필 이미지"
+                            >
+                        </label>
+                        <button type="button" class="profile-edit-avatar-button" data-trigger-profile-image>
+                            <i data-lucide="camera"></i>
+                        </button>
+                        <input type="file" name="profile_image" id="profileImageInput" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+                    </div>
+
+                    <div class="profile-edit-field-stack">
+                        <div class="profile-edit-field">
+                            <label for="profileName">Nickname</label>
+                            <input type="text" id="profileName" name="name" value="{{ user.name }}" required>
+                        </div>
+                        <div class="profile-edit-field">
+                            <label for="profileUsername">Username</label>
+                            <input type="text" id="profileUsername" name="username" value="{{ user.username }}" pattern="[a-z0-9_]{4,20}" required>
+                        </div>
+                        <div class="profile-edit-field">
+                            <label for="profileBio">Bio / Description</label>
+                            <textarea id="profileBio" name="bio" rows="4" placeholder="평범한 일상을 기록하고 소통하는 공간입니다.">{{ user.bio or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="profile-edit-card">
+                <div class="profile-edit-card-header">
+                    <span class="profile-edit-card-icon info"><i data-lucide="info"></i></span>
+                    <h2>추가 정보</h2>
+                </div>
+
+                <div class="profile-edit-field-stack">
+                    <div class="profile-edit-field profile-edit-field-with-icon">
+                        <label for="statusMessage">Status Message</label>
+                        <div class="profile-edit-input-icon-wrap">
+                            <input type="text" id="statusMessage" name="status_message" value="{{ user.status_message or '' }}" placeholder="오늘도 산책 완료 🐾">
+                            <i data-lucide="pencil"></i>
+                        </div>
+                    </div>
+
+                    <div class="profile-edit-field profile-edit-field-with-icon">
+                        <label for="profileLocation">Location</label>
+                        <div class="profile-edit-input-icon-wrap">
+                            <input type="text" id="profileLocation" name="location" value="{{ user.location or '' }}" placeholder="서울 한강공원">
+                            <i data-lucide="map-pin"></i>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="profile-edit-actions">
+                <a href="{{ url_for('mypage') }}" class="profile-edit-cancel-btn">취소</a>
+                <button type="submit" class="profile-edit-save-btn">저장하기</button>
+            </div>
+        </form>
+    </main>
+
+    <script src="{{ url_for('static', filename='profile_edit.js') }}"></script>
+</body>
+</html>

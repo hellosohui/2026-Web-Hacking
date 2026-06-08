@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meongstagram | 알림</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="notification-body">
+    <main class="profile-layout-container notification-layout-container">
+        <aside class="profile-sidebar notification-sidebar">
+            <div class="sidebar-logo notification-sidebar-logo">
+                <a href="{{ url_for('index') }}">Meongstagram</a>
+            </div>
+            {% set sidebar_active = 'notifications' %}
+            {% set sidebar_nav_class = 'sidebar-nav notification-sidebar-nav' %}
+            {% set sidebar_item_class = 'sidebar-item notification-sidebar-item' %}
+            {% include "components/sidebar_nav.html" %}
+            <div class="sidebar-bottom notification-sidebar-bottom">
+                <a href="{{ url_for('create_post') }}" class="btn-create-post-sidebar notification-create-post-btn">게시물 만들기</a>
+            </div>
+        </aside>
+
+        <section class="profile-content-area notification-content-area">
+            <div class="notification-page-shell">
+                <header class="notification-page-header">
+                    <div class="notification-title-group">
+                        <h1>알림</h1>
+                        <span class="notification-count-pill">{{ unread_notification_badge }}</span>
+                    </div>
+                    <div class="notification-header-actions">
+                        <form method="post" action="{{ url_for('read_all_notifications') }}">
+                            <button type="submit" class="notification-header-link">전체 읽음</button>
+                        </form>
+                        <a href="{{ url_for('notification_settings_page') }}" class="notification-header-icon notification-header-icon-link"><i data-lucide="settings-2"></i></a>
+                        <button type="button" class="notification-header-icon"><i data-lucide="circle-help"></i></button>
+                    </div>
+                </header>
+
+                <section class="notification-list">
+                    {% for notification in notifications %}
+                    <article class="notification-item-card {{ 'unread' if notification.unread else '' }}">
+                        <a href="{{ notification.target_url }}" class="notification-card-link" aria-label="알림 열기"></a>
+                        <div class="notification-avatar-stack">
+                            <img src="{{ notification.actor_avatar }}" alt="{{ notification.actor_name }}" class="notification-avatar">
+                            <span class="notification-type-icon type-{{ notification.type_class }}">
+                                <i data-lucide="{{ notification.icon }}"></i>
+                            </span>
+                        </div>
+
+                        <div class="notification-copy">
+                            <p><strong>{{ notification.actor_name }}</strong>{{ notification.message.replace(notification.actor_name, '') }}</p>
+                            <span class="notification-handle">{{ notification.actor_handle }}</span>
+                            <span>{{ notification.display_time }}</span>
+                        </div>
+
+                        <div class="notification-meta">
+                            {% if notification.unread %}
+                            <span class="notification-unread-dot"></span>
+                            {% endif %}
+                            <form method="post" action="{{ url_for('delete_notification', notification_id=notification.id) }}" class="notification-delete-form">
+                                <button type="submit" class="notification-delete-btn" aria-label="알림 삭제">
+                                    <i data-lucide="x"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                    {% else %}
+                    <div class="notification-empty-state">
+                        아직 알림이 없습니다.
+                    </div>
+                    {% endfor %}
+                </section>
+
+                <section class="notification-settings-card">
+                    <div class="notification-settings-copy">
+                        <h2>맞춤 알림 설정</h2>
+                        <p>보고 싶은 알림만 쏙쏙! 산책 친구들의 소식을 놓치지 마세요.</p>
+                        <a href="{{ url_for('notification_settings_page') }}" class="notification-settings-btn">설정 바로가기</a>
+                    </div>
+                    <div class="notification-settings-graphic" aria-hidden="true">
+                        <span class="paw-dot dot-1"></span>
+                        <span class="paw-dot dot-2"></span>
+                        <span class="paw-dot dot-3"></span>
+                        <span class="paw-dot dot-4"></span>
+                        <span class="paw-pad"></span>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
